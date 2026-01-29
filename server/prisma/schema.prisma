@@ -1,0 +1,68 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Session {
+  id        String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users   User[]
+  stories Story[]
+
+  @@index([createdAt])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  sessionId String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  votes   Vote[]
+
+  @@unique([sessionId, name])
+  @@index([sessionId])
+}
+
+model Story {
+  id          String   @id @default(uuid())
+  name        String
+  description String?  @db.Text
+  url         String?
+  revealed    Boolean  @default(false)
+  isFocused   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  votes     Vote[]
+
+  @@index([sessionId, isFocused])
+  @@index([sessionId, createdAt])
+}
+
+model Vote {
+  id        String   @id @default(uuid())
+  value     String?
+  modifier  String?  // 'soft_up', 'soft_down', 'question', or null
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId  String
+  storyId String
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story   Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+  @@index([storyId])
+}

@@ -3,30 +3,13 @@ interface User {
   name: string;
 }
 
-interface Vote {
-  userId: string;
-  hasVoted: boolean;
-  value?: string;
-}
-
-interface Story {
-  id: string;
-  name: string;
-  description?: string;
-  url?: string;
-  revealed: boolean;
-  votes: Vote[];
-}
-
 interface ParticipantsPanelProps {
   users: User[];
-  currentStory: Story | null;
   darkMode: boolean;
 }
 
 export const ParticipantsPanel = ({
   users,
-  currentStory,
   darkMode,
 }: ParticipantsPanelProps) => {
   const colors = darkMode ? {
@@ -48,11 +31,6 @@ export const ParticipantsPanel = ({
         {users.map((user) => (
           <div key={user.id} style={styles.userItem}>
             <span>{user.name}</span>
-            {currentStory && (
-              <span style={styles.voteStatus}>
-                {currentStory.votes.find(v => v.userId === user.id)?.hasVoted ? '✓' : '○'}
-              </span>
-            )}
           </div>
         ))}
       </div>

@@ -14,6 +14,8 @@ export const Home = () => {
   const [storedSession, setStoredSession] = useState<string | null>(null);
   const [showRejoinPrompt, setShowRejoinPrompt] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [showCustomSessionModal, setShowCustomSessionModal] = useState(false);
+  const [customSessionId, setCustomSessionId] = useState('');
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const stored = localStorage.getItem(STORAGE_KEY_DARK_MODE);
     return stored === 'true';
@@ -50,17 +52,33 @@ export const Home = () => {
     setStoredSession(null);
   };
 
-  const createSession = async () => {
+  const createSession = () => {
     if (!userName.trim()) {
       setNotification('Please enter your name');
       return;
     }
+    setShowCustomSessionModal(true);
+  };
 
+  const confirmCreateSession = async () => {
     setLoading(true);
+    setShowCustomSessionModal(false);
+
     try {
+      const body = customSessionId.trim() ? { sessionId: customSessionId.trim() } : undefined;
       const response = await fetch('/api/session', {
         method: 'POST',
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body: body ? JSON.stringify(body) : undefined,
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        setNotification(error.error || 'Failed to create session');
+        setLoading(false);
+        return;
+      }
+
       const data = await response.json();
 
       localStorage.setItem(STORAGE_KEY_USERNAME, userName);
@@ -72,6 +90,7 @@ export const Home = () => {
       setNotification('Failed to create session');
     } finally {
       setLoading(false);
+      setCustomSessionId('');
     }
   };
 
@@ -142,6 +161,42 @@ export const Home = () => {
       {notification && (
         <Notification message={notification} onClose={() => setNotification(null)} />
       )}
+      {showCustomSessionModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowCustomSessionModal(false)}>
+          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>Create New Session</h2>
+            <p style={styles.modalDescription}>
+              Enter a custom session name (optional) or leave blank to auto-generate
+            </p>
+            <input
+              type="text"
+              value={customSessionId}
+              onChange={(e) => setCustomSessionId(e.target.value)}
+              placeholder="Custom session name (optional)"
+              style={styles.modalInput}
+              autoFocus
+            />
+            <div style={styles.modalButtons}>
+              <button
+                onClick={() => {
+                  setShowCustomSessionModal(false);
+                  setCustomSessionId('');
+                }}
+                style={styles.cancelButton}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmCreateSession}
+                style={styles.confirmButton}
+                disabled={loading}
+              >
+                {loading ? 'Creating...' : 'Create Session'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -165,6 +220,73 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
     backgroundColor: colors.surface,
     color: colors.text,
     border: `2px solid ${colors.border}`,
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: '8px',
+    padding: '24px',
+    maxWidth: '500px',
+    width: '100%',
+    margin: '20px',
+  },
+  modalTitle: {
+    fontSize: '24px',
+    fontWeight: 'bold',
+    marginBottom: '12px',
+    color: colors.text,
+  },
+  modalDescription: {
+    fontSize: '14px',
+    color: colors.textSecondary,
+    marginBottom: '20px',
+  },
+  modalInput: {
+    width: '100%',
+    padding: '12px',
+    fontSize: '16px',
+    border: `2px solid ${colors.border}`,
+    borderRadius: '4px',
+    marginBottom: '20px',
+    backgroundColor: colors.surface,
+    color: colors.text,
+    boxSizing: 'border-box',
+  },
+  modalButtons: {
+    display: 'flex',
+    gap: '12px',
+    justifyContent: 'flex-end',
+  },
+  cancelButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: '600',
+    backgroundColor: colors.surface,
+    color: colors.text,
+    border: `2px solid ${colors.border}`,
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  confirmButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: '600',
+    backgroundColor: colors.primary,
+    color: 'white',
+    border: 'none',
     borderRadius: '4px',
     cursor: 'pointer',
   },

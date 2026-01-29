@@ -9,6 +9,7 @@ export interface User {
 export interface Vote {
   userId: string;
   value: string | null;
+  modifier?: string | null;
 }
 
 export interface Story {
@@ -41,6 +42,10 @@ export enum MessageType {
   VOTES_REVEALED = 'votes_revealed',
   RESET_VOTES = 'reset_votes',
   VOTES_RESET = 'votes_reset',
+  SET_FOCUSED_STORY = 'set_focused_story',
+  STORY_FOCUSED = 'story_focused',
+  UNFOCUS_STORY = 'unfocus_story',
+  STORY_UNFOCUSED = 'story_unfocused',
   SESSION_STATE = 'session_state',
   ERROR = 'error'
 }
@@ -60,6 +65,7 @@ export interface CreateStoryMessage {
 
 export interface EditStoryMessage {
   type: MessageType.EDIT_STORY;
+  storyId: string;
   name: string;
   description?: string;
   url?: string;
@@ -67,15 +73,28 @@ export interface EditStoryMessage {
 
 export interface VoteMessage {
   type: MessageType.VOTE;
+  storyId: string;
   value: string | null;
+  modifier?: string | null;
 }
 
 export interface RevealVotesMessage {
   type: MessageType.REVEAL_VOTES;
+  storyId: string;
 }
 
 export interface ResetVotesMessage {
   type: MessageType.RESET_VOTES;
+  storyId: string;
+}
+
+export interface SetFocusedStoryMessage {
+  type: MessageType.SET_FOCUSED_STORY;
+  storyId: string;
+}
+
+export interface UnfocusStoryMessage {
+  type: MessageType.UNFOCUS_STORY;
 }
 
 export type ClientMessage =
@@ -84,7 +103,9 @@ export type ClientMessage =
   | EditStoryMessage
   | VoteMessage
   | RevealVotesMessage
-  | ResetVotesMessage;
+  | ResetVotesMessage
+  | SetFocusedStoryMessage
+  | UnfocusStoryMessage;
 
 export interface UserJoinedMessage {
   type: MessageType.USER_JOINED;
@@ -104,6 +125,7 @@ export interface StoryCreatedMessage {
     description?: string;
     url?: string;
     revealed: boolean;
+    isFocused: boolean;
   };
 }
 
@@ -120,31 +142,45 @@ export interface StoryUpdatedMessage {
 
 export interface VoteUpdateMessage {
   type: MessageType.VOTE_UPDATE;
+  storyId: string;
   userId: string;
   hasVoted: boolean;
   value?: string;
+  modifier?: string;
 }
 
 export interface VotesRevealedMessage {
   type: MessageType.VOTES_REVEALED;
+  storyId: string;
   votes: Array<{ userId: string; userName: string; value: string | null }>;
 }
 
 export interface VotesResetMessage {
   type: MessageType.VOTES_RESET;
+  storyId: string;
+}
+
+export interface StoryFocusedMessage {
+  type: MessageType.STORY_FOCUSED;
+  storyId: string;
+}
+
+export interface StoryUnfocusedMessage {
+  type: MessageType.STORY_UNFOCUSED;
 }
 
 export interface SessionStateMessage {
   type: MessageType.SESSION_STATE;
   users: Array<{ id: string; name: string }>;
-  currentStory: {
+  stories: Array<{
     id: string;
     name: string;
     description?: string;
     url?: string;
     revealed: boolean;
-    votes: Array<{ userId: string; hasVoted: boolean; value?: string }>;
-  } | null;
+    isFocused: boolean;
+    votes: Array<{ userId: string; hasVoted: boolean; value?: string; modifier?: string }>;
+  }>;
 }
 
 export interface ErrorMessage {
@@ -160,5 +196,7 @@ export type ServerMessage =
   | VoteUpdateMessage
   | VotesRevealedMessage
   | VotesResetMessage
+  | StoryFocusedMessage
+  | StoryUnfocusedMessage
   | SessionStateMessage
   | ErrorMessage;

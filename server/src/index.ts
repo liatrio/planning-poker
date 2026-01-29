@@ -14,6 +14,8 @@ import {
   VoteUpdateMessage,
   VotesRevealedMessage,
   VotesResetMessage,
+  StoryFocusedMessage,
+  StoryUnfocusedMessage,
 } from './types';
 
 const app = express();
@@ -30,15 +32,25 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-app.post('/api/session', (req, res) => {
-  const sessionId = sessionManager.createSession();
-  res.json({ sessionId });
+app.post('/api/session', async (req, res) => {
+  try {
+    const { sessionId: customSessionId } = req.body;
+    const sessionId = await sessionManager.createSession(customSessionId);
+    res.json({ sessionId });
+  } catch (error: any) {
+    if (error.message.includes('already exists')) {
+      res.status(409).json({ error: 'Session ID already exists' });
+    } else {
+      console.error('Error creating session:', error);
+      res.status(500).json({ error: 'Failed to create session' });
+    }
+  }
 });
 
 wss.on('connection', (ws: WebSocket) => {
   console.log('New WebSocket connection');
 
-  ws.on('message', (data: Buffer) => {
+  ws.on('message', async (data: Buffer) => {
     try {
       const dataStr = data.toString();
 
@@ -53,7 +65,8 @@ wss.on('connection', (ws: WebSocket) => {
         case MessageType.JOIN: {
           const { sessionId, userName } = message;
 
-          if (!sessionManager.getSession(sessionId)) {
+          const session = await sessionManager.getSession(sessionId);
+          if (!session) {
             const error: ErrorMessage = {
               type: MessageType.ERROR,
               message: 'Session not found',
@@ -62,7 +75,7 @@ wss.on('connection', (ws: WebSocket) => {
             return;
           }
 
-          const user = sessionManager.addUser(sessionId, userName, ws);
+          const user = await sessionManager.addUser(sessionId, userName, ws);
           if (!user) {
             const error: ErrorMessage = {
               type: MessageType.ERROR,
@@ -74,7 +87,7 @@ wss.on('connection', (ws: WebSocket) => {
 
           userToSession.set(ws, { sessionId, userId: user.id });
 
-          const sessionState = sessionManager.getSessionState(sessionId);
+          const sessionState = await sessionManager.getSessionState(sessionId);
           if (sessionState) {
             ws.send(JSON.stringify(sessionState));
           }
@@ -83,7 +96,7 @@ wss.on('connection', (ws: WebSocket) => {
             type: MessageType.USER_JOINED,
             user: { id: user.id, name: user.name },
           };
-          sessionManager.broadcast(sessionId, userJoined, user.id);
+          await sessionManager.broadcast(sessionId, userJoined, user.id);
 
           console.log(`User ${userName} joined session ${sessionId}`);
           break;
@@ -94,7 +107,7 @@ wss.on('connection', (ws: WebSocket) => {
           if (!sessionInfo) return;
 
           const { name, description, url } = message;
-          const story = sessionManager.createStory(sessionInfo.sessionId, name, description, url);
+          const story = await sessionManager.createStory(sessionInfo.sessionId, name, description, url);
 
           if (story) {
             const storyCreated: StoryCreatedMessage = {
@@ -105,10 +118,10 @@ wss.on('connection', (ws: WebSocket) => {
                 description: story.description,
                 url: story.url,
                 revealed: story.revealed,
+                isFocused: false,
               },
             };
-            sessionManager.broadcast(sessionInfo.sessionId, storyCreated);
-            sessionManager.sendToUser(sessionInfo.sessionId, sessionInfo.userId, storyCreated);
+            await sessionManager.broadcast(sessionInfo.sessionId, storyCreated);
             console.log(`Story created in session ${sessionInfo.sessionId}: ${name}`);
           }
           break;
@@ -118,8 +131,8 @@ wss.on('connection', (ws: WebSocket) => {
           const sessionInfo = userToSession.get(ws);
           if (!sessionInfo) return;
 
-          const { name, description, url } = message;
-          const story = sessionManager.editStory(sessionInfo.sessionId, name, description, url);
+          const { storyId, name, description, url } = message;
+          const story = await sessionManager.editStory(sessionInfo.sessionId, storyId, name, description, url);
 
           if (story) {
             const storyUpdated: StoryUpdatedMessage = {
@@ -132,9 +145,8 @@ wss.on('connection', (ws: WebSocket) => {
                 revealed: story.revealed,
               },
             };
-            sessionManager.broadcast(sessionInfo.sessionId, storyUpdated);
-            sessionManager.sendToUser(sessionInfo.sessionId, sessionInfo.userId, storyUpdated);
-            console.log(`Story updated in session ${sessionInfo.sessionId}: ${name}`);
+            await sessionManager.broadcast(sessionInfo.sessionId, storyUpdated);
+            console.log(`Story ${storyId} updated in session ${sessionInfo.sessionId}`);
           }
           break;
         }
@@ -143,20 +155,20 @@ wss.on('connection', (ws: WebSocket) => {
           const sessionInfo = userToSession.get(ws);
           if (!sessionInfo) return;
 
-          const { value } = message;
-          const success = sessionManager.vote(sessionInfo.sessionId, sessionInfo.userId, value);
+          const { storyId, value, modifier } = message;
+          const success = await sessionManager.vote(sessionInfo.sessionId, storyId, sessionInfo.userId, value, modifier);
 
           if (success) {
-            const session = sessionManager.getSession(sessionInfo.sessionId);
             const voteUpdate: VoteUpdateMessage = {
               type: MessageType.VOTE_UPDATE,
+              storyId,
               userId: sessionInfo.userId,
               hasVoted: value !== null,
-              value: session?.currentStory?.revealed ? value ?? undefined : undefined,
+              value: undefined, // Don't reveal value until votes are revealed
+              modifier: modifier || undefined, // Send modifier so UI can show indicators (convert null to undefined)
             };
-            sessionManager.broadcast(sessionInfo.sessionId, voteUpdate);
-            sessionManager.sendToUser(sessionInfo.sessionId, sessionInfo.userId, voteUpdate);
-            console.log(`Vote received from user ${sessionInfo.userId}`);
+            await sessionManager.broadcast(sessionInfo.sessionId, voteUpdate);
+            console.log(`Vote received from user ${sessionInfo.userId} for story ${storyId} with modifier ${modifier || 'none'}`);
           }
           break;
         }
@@ -165,25 +177,25 @@ wss.on('connection', (ws: WebSocket) => {
           const sessionInfo = userToSession.get(ws);
           if (!sessionInfo) return;
 
-          sessionManager.revealVotes(sessionInfo.sessionId);
-          const session = sessionManager.getSession(sessionInfo.sessionId);
+          const { storyId } = message;
+          await sessionManager.revealVotes(sessionInfo.sessionId, storyId);
 
-          if (session?.currentStory) {
-            const votes = Array.from(session.currentStory.votes.entries()).map(
-              ([userId, value]) => ({
-                userId,
-                userName: sessionManager.getUserName(sessionInfo.sessionId, userId) || 'Unknown',
-                value,
-              })
-            );
+          const storyData = await sessionManager.getStoryWithVotes(sessionInfo.sessionId, storyId);
+
+          if (storyData) {
+            const votes = Array.from(storyData.story.votes.entries()).map(([userId, value]) => ({
+              userId,
+              userName: storyData.userNames.get(userId) || 'Unknown',
+              value,
+            }));
 
             const votesRevealed: VotesRevealedMessage = {
               type: MessageType.VOTES_REVEALED,
+              storyId,
               votes,
             };
-            sessionManager.broadcast(sessionInfo.sessionId, votesRevealed);
-            sessionManager.sendToUser(sessionInfo.sessionId, sessionInfo.userId, votesRevealed);
-            console.log(`Votes revealed in session ${sessionInfo.sessionId}`);
+            await sessionManager.broadcast(sessionInfo.sessionId, votesRevealed);
+            console.log(`Votes revealed for story ${storyId} in session ${sessionInfo.sessionId}`);
           }
           break;
         }
@@ -192,14 +204,49 @@ wss.on('connection', (ws: WebSocket) => {
           const sessionInfo = userToSession.get(ws);
           if (!sessionInfo) return;
 
-          sessionManager.resetVotes(sessionInfo.sessionId);
+          const { storyId } = message;
+          await sessionManager.resetVotes(sessionInfo.sessionId, storyId);
 
           const votesReset: VotesResetMessage = {
             type: MessageType.VOTES_RESET,
+            storyId,
           };
-          sessionManager.broadcast(sessionInfo.sessionId, votesReset);
-          sessionManager.sendToUser(sessionInfo.sessionId, sessionInfo.userId, votesReset);
-          console.log(`Votes reset in session ${sessionInfo.sessionId}`);
+          await sessionManager.broadcast(sessionInfo.sessionId, votesReset);
+          console.log(`Votes reset for story ${storyId} in session ${sessionInfo.sessionId}`);
+          break;
+        }
+
+        case MessageType.SET_FOCUSED_STORY: {
+          const sessionInfo = userToSession.get(ws);
+          if (!sessionInfo) return;
+
+          const { storyId } = message;
+          const success = await sessionManager.setFocusedStory(sessionInfo.sessionId, storyId);
+
+          if (success) {
+            const storyFocused: StoryFocusedMessage = {
+              type: MessageType.STORY_FOCUSED,
+              storyId,
+            };
+            await sessionManager.broadcast(sessionInfo.sessionId, storyFocused);
+            console.log(`Story ${storyId} focused in session ${sessionInfo.sessionId}`);
+          }
+          break;
+        }
+
+        case MessageType.UNFOCUS_STORY: {
+          const sessionInfo = userToSession.get(ws);
+          if (!sessionInfo) return;
+
+          const success = await sessionManager.unfocusAllStories(sessionInfo.sessionId);
+
+          if (success) {
+            const storyUnfocused: StoryUnfocusedMessage = {
+              type: MessageType.STORY_UNFOCUSED,
+            };
+            await sessionManager.broadcast(sessionInfo.sessionId, storyUnfocused);
+            console.log(`All stories unfocused in session ${sessionInfo.sessionId}`);
+          }
           break;
         }
       }
@@ -213,17 +260,17 @@ wss.on('connection', (ws: WebSocket) => {
     }
   });
 
-  ws.on('close', () => {
+  ws.on('close', async () => {
     const sessionInfo = userToSession.get(ws);
     if (sessionInfo) {
       const { sessionId, userId } = sessionInfo;
-      sessionManager.removeUser(sessionId, userId);
+      await sessionManager.removeUser(sessionId, userId);
 
       const userLeft: UserLeftMessage = {
         type: MessageType.USER_LEFT,
         userId,
       };
-      sessionManager.broadcast(sessionId, userLeft);
+      await sessionManager.broadcast(sessionId, userLeft);
 
       userToSession.delete(ws);
       console.log(`User ${userId} left session ${sessionId}`);
@@ -239,4 +286,23 @@ const PORT = process.env.PORT || 3001;
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+});
+
+// Graceful shutdown handlers
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  await sessionManager.disconnect();
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  await sessionManager.disconnect();
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
 });

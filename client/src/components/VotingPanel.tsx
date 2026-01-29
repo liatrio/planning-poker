@@ -1,16 +1,20 @@
 interface VotingPanelProps {
   fibonacciValues: string[];
   selectedVote: string | null;
+  selectedModifier: string | null;
   isRevealed: boolean;
   onVote: (value: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
+  onSetModifier: (modifier: string | null) => void;
   darkMode: boolean;
 }
 
 export const VotingPanel = ({
   fibonacciValues,
   selectedVote,
+  selectedModifier,
   isRevealed,
   onVote,
+  onSetModifier,
   darkMode,
 }: VotingPanelProps) => {
   const colors = darkMode ? {
@@ -65,6 +69,44 @@ export const VotingPanel = ({
           );
         })}
       </div>
+
+      {!isRevealed && (
+        <div style={styles.modifiersSection}>
+          <h4 style={styles.modifiersTitle}>Vote Modifiers (Optional)</h4>
+          <div style={styles.modifiersGrid}>
+            <button
+              onClick={() => onSetModifier('soft_up')}
+              style={{
+                ...styles.modifierButton,
+                ...(selectedModifier === 'soft_up' ? styles.modifierSelected : styles.modifierUnselected),
+              }}
+            >
+              ↑ Soft Up
+            </button>
+            <button
+              onClick={() => onSetModifier('soft_down')}
+              style={{
+                ...styles.modifierButton,
+                ...(selectedModifier === 'soft_down' ? styles.modifierSelected : styles.modifierUnselected),
+              }}
+            >
+              ↓ Soft Down
+            </button>
+            <button
+              onClick={() => onSetModifier('question')}
+              style={{
+                ...styles.modifierButton,
+                ...(selectedModifier === 'question' ? styles.modifierSelected : styles.modifierUnselected),
+              }}
+            >
+              ? Question
+            </button>
+          </div>
+          <p style={styles.modifiersHelp}>
+            <strong>Soft Up/Down:</strong> If team votes 1 above/below, match theirs. <strong>Question:</strong> Need to discuss more.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
@@ -85,8 +127,8 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
     gap: '12px',
   },
   card: {
-    aspectRatio: '2/3',
-    fontSize: '32px',
+    aspectRatio: '2/1',
+    fontSize: '24px',
     fontWeight: 'bold',
     cursor: 'pointer',
     transition: 'all 0.2s',
@@ -109,5 +151,46 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
     opacity: 0.5,
     cursor: 'not-allowed',
     outline: 'none',
+  },
+  modifiersSection: {
+    marginTop: '24px',
+    paddingTop: '24px',
+    borderTop: `1px solid ${colors.border}`,
+  },
+  modifiersTitle: {
+    fontSize: '16px',
+    fontWeight: '600',
+    marginBottom: '12px',
+    color: colors.text,
+  },
+  modifiersGrid: {
+    display: 'flex',
+    gap: '12px',
+    flexWrap: 'wrap',
+  },
+  modifierButton: {
+    padding: '8px 16px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    borderRadius: '6px',
+    transition: 'all 0.2s',
+    outline: 'none',
+    border: `2px solid ${colors.border}`,
+  },
+  modifierUnselected: {
+    backgroundColor: colors.surface,
+    color: colors.text,
+  },
+  modifierSelected: {
+    backgroundColor: colors.primary,
+    color: 'white',
+    border: `2px solid ${colors.primary}`,
+  },
+  modifiersHelp: {
+    fontSize: '12px',
+    color: colors.text,
+    marginTop: '12px',
+    opacity: 0.7,
   },
 });

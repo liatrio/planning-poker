@@ -5,24 +5,16 @@ import {
   MessageType,
   User,
   Vote,
+  Story,
 } from './types';
-
-interface Story {
-  id: string;
-  name: string;
-  description?: string;
-  url?: string;
-  revealed: boolean;
-  votes: Vote[];
-}
 
 interface UseWebSocketReturn {
   connected: boolean;
   users: User[];
-  currentStory: Story | null;
+  stories: Story[];
   currentUserId: string | null;
   sendMessage: (message: ClientMessage) => void;
-  revealedVotes: Array<{ userId: string; userName: string; value: string | null }> | null;
+  revealedVotesMap: Map<string, Array<{ userId: string; userName: string; value: string | null }>>;
   error: string | null;
 }
 
@@ -32,9 +24,9 @@ export const useWebSocket = (
 ): UseWebSocketReturn => {
   const [connected, setConnected] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
-  const [currentStory, setCurrentStory] = useState<Story | null>(null);
+  const [stories, setStories] = useState<Story[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [revealedVotes, setRevealedVotes] = useState<Array<{ userId: string; userName: string; value: string | null }> | null>(null);
+  const [revealedVotesMap, setRevealedVotesMap] = useState<Map<string, Array<{ userId: string; userName: string; value: string | null }>>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const ws = useRef<WebSocket | null>(null);
 
@@ -83,7 +75,7 @@ export const useWebSocket = (
         switch (message.type) {
           case MessageType.SESSION_STATE:
             setUsers(message.users);
-            setCurrentStory(message.currentStory);
+            setStories(message.stories);
             const currentUser = message.users.find(u => u.name === userName);
             if (currentUser) {
               setCurrentUserId(currentUser.id);
@@ -97,48 +89,45 @@ export const useWebSocket = (
 
           case MessageType.USER_LEFT:
             setUsers((prev) => prev.filter((u) => u.id !== message.userId));
-            setCurrentStory((prev) => {
-              if (!prev) return null;
-              return {
-                ...prev,
-                votes: prev.votes.filter((v) => v.userId !== message.userId),
-              };
-            });
+            // Don't remove votes - they're persisted in the database
+            // and will be restored when the user reconnects
             break;
 
           case MessageType.STORY_CREATED:
-            setCurrentStory({
-              ...message.story,
-              votes: [],
+            setStories((prev) => {
+              // If this story is focused, unfocus others
+              if (message.story.isFocused) {
+                return [
+                  { ...message.story, votes: [] },
+                  ...prev.map(s => ({ ...s, isFocused: false })),
+                ];
+              }
+              return [{ ...message.story, votes: [] }, ...prev];
             });
-            setRevealedVotes(null);
             break;
 
           case MessageType.STORY_UPDATED:
-            setCurrentStory((prev) => {
-              if (!prev) return null;
-              return {
-                ...prev,
-                name: message.story.name,
-                description: message.story.description,
-                url: message.story.url,
-              };
-            });
+            setStories((prev) => prev.map(story =>
+              story.id === message.story.id
+                ? { ...story, ...message.story }
+                : story
+            ));
             break;
 
           case MessageType.VOTE_UPDATE:
-            setCurrentStory((prev) => {
-              if (!prev) return null;
+            setStories((prev) => prev.map(story => {
+              if (story.id !== message.storyId) return story;
 
-              const existingVoteIndex = prev.votes.findIndex(
+              const existingVoteIndex = story.votes.findIndex(
                 (v) => v.userId === message.userId
               );
 
-              const newVotes = [...prev.votes];
+              const newVotes = [...story.votes];
               const voteData: Vote = {
                 userId: message.userId,
                 hasVoted: message.hasVoted,
                 value: message.value,
+                modifier: message.modifier,
               };
 
               if (existingVoteIndex >= 0) {
@@ -147,34 +136,62 @@ export const useWebSocket = (
                 newVotes.push(voteData);
               }
 
-              return {
-                ...prev,
-                votes: newVotes,
-              };
-            });
+              return { ...story, votes: newVotes };
+            }));
             break;
 
           case MessageType.VOTES_REVEALED:
-            setRevealedVotes(message.votes);
-            setCurrentStory((prev) => {
-              if (!prev) return null;
-              return {
-                ...prev,
-                revealed: true,
-              };
+            setRevealedVotesMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(message.storyId, message.votes);
+              return newMap;
             });
+            setStories((prev) => prev.map(story => {
+              if (story.id !== message.storyId) return story;
+
+              // Update votes with revealed values
+              const updatedVotes = story.votes.map(vote => {
+                const revealedVote = message.votes.find(v => v.userId === vote.userId);
+                return {
+                  ...vote,
+                  hasVoted: true,
+                  value: revealedVote?.value ?? undefined,
+                };
+              });
+
+              return {
+                ...story,
+                revealed: true,
+                votes: updatedVotes,
+              };
+            }));
             break;
 
           case MessageType.VOTES_RESET:
-            setCurrentStory((prev) => {
-              if (!prev) return null;
-              return {
-                ...prev,
-                votes: [],
-                revealed: false,
-              };
+            setRevealedVotesMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(message.storyId);
+              return newMap;
             });
-            setRevealedVotes(null);
+            setStories((prev) => prev.map(story =>
+              story.id === message.storyId
+                ? { ...story, votes: [], revealed: false }
+                : story
+            ));
+            break;
+
+          case MessageType.STORY_FOCUSED:
+            setStories((prev) => prev.map(story => ({
+              ...story,
+              isFocused: story.id === message.storyId,
+            })));
+            break;
+
+          case MessageType.STORY_UNFOCUSED:
+            setStories((prev) => prev.map(story => ({
+              ...story,
+              isFocused: false,
+            })));
             break;
 
           case MessageType.ERROR:
@@ -219,10 +236,10 @@ export const useWebSocket = (
   return {
     connected,
     users,
-    currentStory,
+    stories,
     currentUserId,
     sendMessage,
-    revealedVotes,
+    revealedVotesMap,
     error,
   };
 };

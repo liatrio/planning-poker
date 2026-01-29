@@ -9,10 +9,12 @@ import { ParticipantsPanel } from './components/ParticipantsPanel';
 import { PastStories } from './components/PastStories';
 import { StoryCard } from './components/StoryCard';
 
-const FIBONACCI_VALUES = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '?'];
+const FIBONACCI_VALUES = ['0', '1', '2', '3', '5', '8'];
 const STORAGE_KEY_USERNAME = 'planning_poker_username';
 const STORAGE_KEY_SESSION = 'planning_poker_last_session';
 const STORAGE_KEY_DARK_MODE = 'planning_poker_dark_mode';
+const STORAGE_KEY_VOTES_PREFIX = 'planning_poker_votes_';
+const STORAGE_KEY_MODIFIERS_PREFIX = 'planning_poker_modifiers_';
 
 export const Session = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -27,20 +29,18 @@ export const Session = () => {
     return stored === 'true';
   });
 
-  const [selectedVote, setSelectedVote] = useState<string | null>(null);
+  const [selectedVotesMap, setSelectedVotesMap] = useState<Map<string, string | null>>(new Map());
+  const [selectedModifiersMap, setSelectedModifiersMap] = useState<Map<string, string | null>>(new Map());
   const [showNewStory, setShowNewStory] = useState(false);
-  const [showEditStory, setShowEditStory] = useState(false);
+  const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [showNamePrompt, setShowNamePrompt] = useState(!userName);
-  const [showIframe, setShowIframe] = useState(false);
+  const [showIframeMap, setShowIframeMap] = useState<Map<string, boolean>>(new Map());
   const [notification, setNotification] = useState<string | null>(null);
-  const [pastStories, setPastStories] = useState<Array<{
-    story: any;
-    revealedVotes: Array<{ userId: string; userName: string; value: string | null }>;
-    average: string | null;
-  }>>([]);
   const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
+  const [collapsedStories, setCollapsedStories] = useState<Set<string>>(new Set());
+  const [seenStories, setSeenStories] = useState<Set<string>>(new Set());
 
-  const { connected, users, currentStory, currentUserId, sendMessage, revealedVotes, error } = useWebSocket(
+  const { connected, users, stories, currentUserId, sendMessage, revealedVotesMap, error } = useWebSocket(
     sessionId || null,
     userName
   );
@@ -65,63 +65,123 @@ export const Session = () => {
     }
   }, [connected, sessionId, userName]);
 
-  // Track story ID to detect story changes
-  const prevStoryId = useRef<string | null>(null);
-
+  // Sync selected votes with server state and collapse new stories by default
   useEffect(() => {
-    if (currentStory) {
-      // Clear selection when story changes
-      if (prevStoryId.current !== currentStory.id) {
-        setSelectedVote(null);
-        prevStoryId.current = currentStory.id;
-        return;
-      }
+    const newSelectedVotes = new Map<string, string | null>();
+    const storedVotes = getStoredVotes();
+    const storedModifiers = getStoredModifiers();
 
-      // Clear selection if votes are empty and not revealed (new story or reset)
-      if (currentStory.votes.length === 0 && !currentStory.revealed) {
-        setSelectedVote(null);
-        return;
-      }
-
-      const myVote = currentStory.votes.find(v => v.userId === currentUserId);
-      if (myVote) {
-        // Only update selection if we have the actual value (votes revealed) or if we haven't voted
-        if (myVote.value !== undefined) {
-          setSelectedVote(myVote.value);
-        } else if (!myVote.hasVoted) {
-          setSelectedVote(null);
+    // Load stored modifiers for all stories
+    setSelectedModifiersMap(prev => {
+      const newMap = new Map(prev);
+      storedModifiers.forEach((modifier, storyId) => {
+        if (!newMap.has(storyId)) {
+          newMap.set(storyId, modifier);
         }
-        // else keep current selection (voted but not revealed yet)
-      } else {
-        setSelectedVote(null);
+      });
+      return newMap;
+    });
+
+    stories.forEach(story => {
+      // Only collapse stories that we haven't seen before
+      setSeenStories(prev => {
+        if (!prev.has(story.id)) {
+          // This is a new story we haven't seen
+          setCollapsedStories(collapsedPrev => {
+            const newSet = new Set(collapsedPrev);
+            newSet.add(story.id);
+            return newSet;
+          });
+          return new Set([...prev, story.id]);
+        }
+        return prev;
+      });
+
+      const myVote = story.votes.find(v => v.userId === currentUserId);
+
+      if (myVote) {
+        // If votes are revealed and we have a value, show it
+        if (story.revealed && myVote.value !== undefined) {
+          newSelectedVotes.set(story.id, myVote.value);
+        }
+        // If we've voted but votes not revealed, use stored vote or keep current selection
+        else if (myVote.hasVoted) {
+          const storedVote = storedVotes.get(story.id);
+          const currentSelection = selectedVotesMap.get(story.id);
+          if (storedVote !== undefined) {
+            newSelectedVotes.set(story.id, storedVote);
+          } else if (currentSelection !== undefined) {
+            newSelectedVotes.set(story.id, currentSelection);
+          }
+        }
       }
-    } else {
-      setSelectedVote(null);
-      prevStoryId.current = null;
+      // If votes reset (no votes and not revealed), clear selection
+      if (story.votes.length === 0 && !story.revealed) {
+        newSelectedVotes.delete(story.id);
+      }
+    });
+
+    setSelectedVotesMap(newSelectedVotes);
+  }, [stories, currentUserId]);
+
+  // Helper functions for localStorage vote persistence
+  const getStoredVotes = (): Map<string, string> => {
+    if (!sessionId) return new Map();
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_VOTES_PREFIX + sessionId);
+      if (stored) {
+        const obj = JSON.parse(stored);
+        return new Map(Object.entries(obj));
+      }
+    } catch (e) {
+      console.error('Failed to load stored votes:', e);
     }
-  }, [currentStory, currentUserId]);
+    return new Map();
+  };
 
-  // Use refs to track the previous story and its revealed votes
-  const prevStoryRef = useRef<typeof currentStory>(null);
-  const prevRevealedVotesRef = useRef<typeof revealedVotes>(null);
-
-  useEffect(() => {
-    // When currentStory changes to a new story, save the old one to history
-    if (currentStory && prevStoryRef.current && currentStory.id !== prevStoryRef.current.id) {
-      const average = calculateAverageFromVotes(prevRevealedVotesRef.current);
-      setPastStories(prev => [{
-        story: prevStoryRef.current,
-        revealedVotes: prevRevealedVotesRef.current || [],
-        average,
-      }, ...prev]);
+  const saveVotesToStorage = (votes: Map<string, string | null>) => {
+    if (!sessionId) return;
+    try {
+      const obj: Record<string, string> = {};
+      votes.forEach((value, key) => {
+        if (value !== null) {
+          obj[key] = value;
+        }
+      });
+      localStorage.setItem(STORAGE_KEY_VOTES_PREFIX + sessionId, JSON.stringify(obj));
+    } catch (e) {
+      console.error('Failed to save votes:', e);
     }
+  };
 
-    prevStoryRef.current = currentStory;
-  }, [currentStory]);
+  const getStoredModifiers = (): Map<string, string> => {
+    if (!sessionId) return new Map();
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_MODIFIERS_PREFIX + sessionId);
+      if (stored) {
+        const obj = JSON.parse(stored);
+        return new Map(Object.entries(obj));
+      }
+    } catch (e) {
+      console.error('Failed to load stored modifiers:', e);
+    }
+    return new Map();
+  };
 
-  useEffect(() => {
-    prevRevealedVotesRef.current = revealedVotes;
-  }, [revealedVotes]);
+  const saveModifiersToStorage = (modifiers: Map<string, string | null>) => {
+    if (!sessionId) return;
+    try {
+      const obj: Record<string, string> = {};
+      modifiers.forEach((value, key) => {
+        if (value !== null) {
+          obj[key] = value;
+        }
+      });
+      localStorage.setItem(STORAGE_KEY_MODIFIERS_PREFIX + sessionId, JSON.stringify(obj));
+    } catch (e) {
+      console.error('Failed to save modifiers:', e);
+    }
+  };
 
   const joinWithName = (name: string) => {
     if (!name.trim()) {
@@ -134,32 +194,106 @@ export const Session = () => {
     setShowNamePrompt(false);
   };
 
-  const vote = (value: string, event?: React.MouseEvent<HTMLButtonElement>) => {
-    if (currentStory?.revealed) return;
+  const vote = (storyId: string, value: string, event?: React.MouseEvent<HTMLButtonElement>) => {
+    const story = stories.find(s => s.id === storyId);
+    if (story?.revealed) return;
 
     // Remove focus from button to prevent persistent focus outline
     if (event?.currentTarget) {
       event.currentTarget.blur();
     }
 
-    const voteValue = selectedVote === value ? null : value;
-    setSelectedVote(voteValue);
+    const currentVote = selectedVotesMap.get(storyId);
+    const voteValue = currentVote === value ? null : value;
+    const modifier = selectedModifiersMap.get(storyId);
+
+    setSelectedVotesMap(prev => {
+      const newMap = new Map(prev);
+      if (voteValue === null) {
+        newMap.delete(storyId);
+      } else {
+        newMap.set(storyId, voteValue);
+      }
+      // Save to localStorage
+      saveVotesToStorage(newMap);
+      return newMap;
+    });
 
     sendMessage({
       type: MessageType.VOTE,
+      storyId,
       value: voteValue,
+      modifier: voteValue === null ? null : modifier,
     });
   };
 
-  const revealVotes = () => {
+  const setModifier = (storyId: string, modifier: string | null) => {
+    const story = stories.find(s => s.id === storyId);
+    if (story?.revealed) return;
+
+    // Calculate the final modifier value before state update
+    const currentModifier = selectedModifiersMap.get(storyId);
+    let finalModifier: string | null = null;
+
+    if (modifier === null) {
+      finalModifier = null;
+    } else {
+      // Toggle off if clicking the same modifier
+      if (currentModifier === modifier) {
+        finalModifier = null;
+      } else {
+        finalModifier = modifier;
+      }
+    }
+
+    setSelectedModifiersMap(prev => {
+      const newMap = new Map(prev);
+      if (finalModifier === null) {
+        newMap.delete(storyId);
+      } else {
+        newMap.set(storyId, finalModifier);
+      }
+      // Save to localStorage
+      saveModifiersToStorage(newMap);
+      return newMap;
+    });
+
+    // If user has already voted, re-send the vote with the updated modifier
+    const currentVote = selectedVotesMap.get(storyId);
+    if (currentVote) {
+      sendMessage({
+        type: MessageType.VOTE,
+        storyId,
+        value: currentVote,
+        modifier: finalModifier,
+      });
+    }
+  };
+
+  const revealVotes = (storyId: string) => {
     sendMessage({
       type: MessageType.REVEAL_VOTES,
+      storyId,
     });
   };
 
-  const resetVotes = () => {
+  const resetVotes = (storyId: string) => {
     sendMessage({
       type: MessageType.RESET_VOTES,
+      storyId,
+    });
+  };
+
+  const setFocusedStory = (storyId: string) => {
+    sendMessage({
+      type: MessageType.SET_FOCUSED_STORY,
+      storyId,
+    });
+  };
+
+  const unfocusStory = () => {
+    sendMessage({
+      type: MessageType.UNFOCUS_STORY,
     });
   };
 
@@ -176,12 +310,12 @@ export const Session = () => {
     }
   };
 
-  const getVoteCount = () => {
-    if (!currentStory) return 0;
-    return currentStory.votes.filter(v => v.hasVoted).length;
+  const getVoteCount = (story: typeof stories[0]) => {
+    return story.votes.filter(v => v.hasVoted).length;
   };
 
-  const calculateAverage = () => {
+  const calculateAverage = (storyId: string) => {
+    const revealedVotes = revealedVotesMap.get(storyId);
     if (!revealedVotes) return null;
 
     const numericVotes = revealedVotes
@@ -211,6 +345,18 @@ export const Session = () => {
 
   const toggleStoryExpanded = (storyId: string) => {
     setExpandedStories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(storyId)) {
+        newSet.delete(storyId);
+      } else {
+        newSet.add(storyId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleStoryCollapsed = (storyId: string) => {
+    setCollapsedStories(prev => {
       const newSet = new Set(prev);
       if (newSet.has(storyId)) {
         newSet.delete(storyId);
@@ -261,6 +407,21 @@ export const Session = () => {
     );
   }
 
+  // Separate active stories from past stories
+  const activeStories = stories.filter(s => !s.revealed || s.isFocused);
+  const pastStories = stories.filter(s => s.revealed && !s.isFocused).map(story => ({
+    story,
+    revealedVotes: revealedVotesMap.get(story.id) || [],
+    average: calculateAverageFromVotes(revealedVotesMap.get(story.id) || []),
+  }));
+
+  // Sort active stories: focused first, then by creation time (newer first)
+  const sortedActiveStories = [...activeStories].sort((a, b) => {
+    if (a.isFocused && !b.isFocused) return -1;
+    if (!a.isFocused && b.isFocused) return 1;
+    return 0; // Keep original order for same focus status
+  });
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -279,35 +440,55 @@ export const Session = () => {
       </div>
 
       <div style={styles.content}>
-        <ParticipantsPanel users={users} currentStory={currentStory} darkMode={darkMode} />
+        <ParticipantsPanel users={users} darkMode={darkMode} />
 
         <div style={styles.main}>
-          {!currentStory ? (
+          <div style={styles.createStorySection}>
+            <button onClick={() => setShowNewStory(true)} style={styles.primaryButton}>
+              + Create New Story
+            </button>
+          </div>
+
+          {sortedActiveStories.length === 0 ? (
             <div style={styles.noStory}>
-              <h2>No active story</h2>
+              <h2>No active stories</h2>
               <p>Create a new story to start voting</p>
-              <button onClick={() => setShowNewStory(true)} style={styles.primaryButton}>
-                Create Story
-              </button>
             </div>
           ) : (
-            <StoryCard
-              story={currentStory}
-              fibonacciValues={FIBONACCI_VALUES}
-              selectedVote={selectedVote}
-              showIframe={showIframe}
-              revealedVotes={revealedVotes}
-              average={calculateAverage()}
-              voteCount={getVoteCount()}
-              totalUsers={users.length}
-              darkMode={darkMode}
-              onEditStory={() => setShowEditStory(true)}
-              onNewStory={() => setShowNewStory(true)}
-              onRevealVotes={revealVotes}
-              onResetVotes={resetVotes}
-              onToggleIframe={() => setShowIframe(!showIframe)}
-              onVote={vote}
-            />
+            sortedActiveStories.map(story => (
+              <div key={story.id} style={styles.storyContainer}>
+                <StoryCard
+                  story={story}
+                  fibonacciValues={FIBONACCI_VALUES}
+                  selectedVote={selectedVotesMap.get(story.id) || null}
+                  selectedModifier={selectedModifiersMap.get(story.id) || null}
+                  showIframe={showIframeMap.get(story.id) || false}
+                  revealedVotes={revealedVotesMap.get(story.id) || null}
+                  average={calculateAverage(story.id)}
+                  voteCount={getVoteCount(story)}
+                  totalUsers={users.length}
+                  darkMode={darkMode}
+                  isFocused={story.isFocused}
+                  isCollapsed={collapsedStories.has(story.id)}
+                  currentUserId={currentUserId}
+                  onEditStory={() => setEditingStoryId(story.id)}
+                  onFocusStory={() => setFocusedStory(story.id)}
+                  onUnfocusStory={unfocusStory}
+                  onRevealVotes={() => revealVotes(story.id)}
+                  onResetVotes={() => resetVotes(story.id)}
+                  onToggleCollapse={() => toggleStoryCollapsed(story.id)}
+                  onToggleIframe={() => {
+                    setShowIframeMap(prev => {
+                      const newMap = new Map(prev);
+                      newMap.set(story.id, !prev.get(story.id));
+                      return newMap;
+                    });
+                  }}
+                  onVote={(value, event) => vote(story.id, value, event)}
+                  onSetModifier={(modifier) => setModifier(story.id, modifier)}
+                />
+              </div>
+            ))
           )}
 
           <PastStories
@@ -338,28 +519,34 @@ export const Session = () => {
         }}
         onCancel={() => setShowNewStory(false)}
       />
-      <StoryModal
-        isOpen={showEditStory}
-        mode="edit"
-        initialName={currentStory?.name || ''}
-        initialDescription={currentStory?.description || ''}
-        initialUrl={currentStory?.url || ''}
-        darkMode={darkMode}
-        onSubmit={(name, description, url) => {
-          if (!name.trim()) {
-            setNotification('Please enter a story name');
-            return;
-          }
-          sendMessage({
-            type: MessageType.EDIT_STORY,
-            name,
-            description: description || undefined,
-            url: url || undefined,
-          });
-          setShowEditStory(false);
-        }}
-        onCancel={() => setShowEditStory(false)}
-      />
+      {editingStoryId && (() => {
+        const editingStory = stories.find(s => s.id === editingStoryId);
+        return (
+          <StoryModal
+            isOpen={true}
+            mode="edit"
+            initialName={editingStory?.name || ''}
+            initialDescription={editingStory?.description || ''}
+            initialUrl={editingStory?.url || ''}
+            darkMode={darkMode}
+            onSubmit={(name, description, url) => {
+              if (!name.trim()) {
+                setNotification('Please enter a story name');
+                return;
+              }
+              sendMessage({
+                type: MessageType.EDIT_STORY,
+                storyId: editingStoryId,
+                name,
+                description: description || undefined,
+                url: url || undefined,
+              });
+              setEditingStoryId(null);
+            }}
+            onCancel={() => setEditingStoryId(null)}
+          />
+        );
+      })()}
       {notification && (
         <Notification message={notification} onClose={() => setNotification(null)} />
       )}
@@ -425,6 +612,14 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
   },
   main: {
     flex: 1,
+  },
+  createStorySection: {
+    marginBottom: '20px',
+    display: 'flex',
+    justifyContent: 'flex-start',
+  },
+  storyContainer: {
+    marginBottom: '20px',
   },
   noStory: {
     backgroundColor: colors.surface,
