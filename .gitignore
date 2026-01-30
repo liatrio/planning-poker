@@ -4,3 +4,20 @@ dist
 *.log
 .env
 .env.local
+
+# Build artifacts
+build
+*.tsbuildinfo
+
+# Coverage
+coverage
+.nyc_output
+
+# Semantic release
+.semantic-release
+
+# Editor directories
+.vscode
+.idea
+*.swp
+*.swo
