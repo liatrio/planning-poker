@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/liatrio/planning-poker/compare/v1.0.0...v1.0.1) (2026-01-30)
+
+
+### Bug Fixes
+
+* cleanup client/server docker ([5c2ead0](https://github.com/liatrio/planning-poker/commit/5c2ead0b3c5dd3d4cffd78b2f1e2330b2d95269c))
+
 # 1.0.0 (2026-01-30)
 
 
