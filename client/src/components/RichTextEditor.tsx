@@ -1,7 +1,6 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useState } from 'react';
-import { MarkdownSerializer } from 'prosemirror-markdown';
 import { ImportContentModal } from './ImportContentModal';
 
 interface RichTextEditorProps {

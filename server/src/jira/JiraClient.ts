@@ -96,12 +96,12 @@ export class JiraClient {
     if (!this.client) return null;
 
     try {
-      const response = await axios.get(url, {
+      const response = await axios.get<ArrayBuffer>(url, {
         auth: this.client.defaults.auth,
         responseType: 'arraybuffer',
       });
 
-      const base64 = Buffer.from(response.data, 'binary').toString('base64');
+      const base64 = Buffer.from(response.data as ArrayBuffer).toString('base64');
       const contentType = response.headers['content-type'] || 'image/png';
       return `data:${contentType};base64,${base64}`;
     } catch (error) {

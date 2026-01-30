@@ -58,7 +58,7 @@ export class SessionManager {
     if (!session) return undefined;
 
     // Transform database session to in-memory Session type
-    const currentStory = session.stories.find((s) => s.isFocused) || null;
+    const currentStory = session.stories.find((s: any) => s.isFocused) || null;
 
     return {
       id: session.id,
@@ -69,16 +69,16 @@ export class SessionManager {
             name: currentStory.name,
             description: currentStory.description ?? undefined,
             url: currentStory.url ?? undefined,
-            votes: new Map(currentStory.votes.map((v) => [v.userId, v.value])),
+            votes: new Map(currentStory.votes.map((v: any) => [v.userId, v.value])),
             revealed: currentStory.revealed,
           }
         : null,
-      stories: session.stories.map((s) => ({
+      stories: session.stories.map((s: any) => ({
         id: s.id,
         name: s.name,
         description: s.description ?? undefined,
         url: s.url ?? undefined,
-        votes: new Map(s.votes.map((v) => [v.userId, v.value])),
+        votes: new Map(s.votes.map((v: any) => [v.userId, v.value])),
         revealed: s.revealed,
       })),
     };
@@ -177,7 +177,7 @@ export class SessionManager {
         name: story.name,
         description: story.description ?? undefined,
         url: story.url ?? undefined,
-        votes: new Map(story.votes.map((v) => [v.userId, v.value])),
+        votes: new Map(story.votes.map((v: any) => [v.userId, v.value])),
         revealed: story.revealed,
       };
     } catch (error) {
@@ -233,7 +233,7 @@ export class SessionManager {
         name: updatedStory.name,
         description: updatedStory.description ?? undefined,
         url: updatedStory.url ?? undefined,
-        votes: new Map(updatedStory.votes.map((v) => [v.userId, v.value])),
+        votes: new Map(updatedStory.votes.map((v: any) => [v.userId, v.value])),
         revealed: updatedStory.revealed,
       };
     } catch (error) {
@@ -348,7 +348,7 @@ export class SessionManager {
   async setFocusedStory(sessionId: string, storyId: string): Promise<boolean> {
     try {
       // Use transaction to ensure only one focused story
-      await this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(async (tx: any) => {
         // Verify story exists and belongs to session
         const story = await tx.story.findFirst({
           where: {
@@ -427,12 +427,12 @@ export class SessionManager {
 
       if (!story) return null;
 
-      const userNames = new Map(
-        story.votes.map((v) => [v.userId, v.user.name])
+      const userNames = new Map<string, string>(
+        story.votes.map((v: any) => [v.userId, v.user.name])
       );
 
-      const voteModifiers = new Map(
-        story.votes.map((v) => [v.userId, v.modifier])
+      const voteModifiers = new Map<string, string | null>(
+        story.votes.map((v: any) => [v.userId, v.modifier])
       );
 
       return {
@@ -441,7 +441,7 @@ export class SessionManager {
           name: story.name,
           description: story.description ?? undefined,
           url: story.url ?? undefined,
-          votes: new Map(story.votes.map((v) => [v.userId, v.value])),
+          votes: new Map(story.votes.map((v: any) => [v.userId, v.value])),
           revealed: story.revealed,
         },
         userNames,
@@ -466,7 +466,7 @@ export class SessionManager {
       const messageStr = JSON.stringify(message);
 
       // Send to each active user's WebSocket connection
-      users.forEach((user) => {
+      users.forEach((user: any) => {
         if (user.id !== excludeUserId) {
           const ws = this.activeConnections.get(user.id);
           if (ws && ws.readyState === WebSocket.OPEN) {
@@ -515,13 +515,13 @@ export class SessionManager {
 
       if (!session) return null;
 
-      const users = session.users.map((u) => ({
+      const users = session.users.map((u: any) => ({
         id: u.id,
         name: u.name,
       }));
 
-      const stories = session.stories.map((story) => {
-        const votes = story.votes.map((vote) => {
+      const stories = session.stories.map((story: any) => {
+        const votes = story.votes.map((vote: any) => {
           if (story.revealed) {
             return {
               userId: vote.userId,

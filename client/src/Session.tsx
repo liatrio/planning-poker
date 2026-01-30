@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWebSocket } from './useWebSocket';
 import { MessageType } from './types';
@@ -37,7 +37,6 @@ export const Session = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
   const [collapsedStories, setCollapsedStories] = useState<Set<string>>(new Set());
-  const [seenStories, setSeenStories] = useState<Set<string>>(new Set());
 
   const { connected, users, stories, currentUserId, sendMessage, revealedVotesMap, aiRecommendationsMap, aiLoadingMap, error } = useWebSocket(
     sessionId || null,
@@ -82,20 +81,6 @@ export const Session = () => {
     });
 
     stories.forEach(story => {
-      // Only collapse stories that we haven't seen before
-      setSeenStories(prev => {
-        if (!prev.has(story.id)) {
-          // This is a new story we haven't seen
-          setCollapsedStories(collapsedPrev => {
-            const newSet = new Set(collapsedPrev);
-            newSet.add(story.id);
-            return newSet;
-          });
-          return new Set([...prev, story.id]);
-        }
-        return prev;
-      });
-
       const myVote = story.votes.find(v => v.userId === currentUserId);
 
       if (myVote) {
