@@ -210,6 +210,11 @@ export class SessionManager {
         return null;
       }
 
+      // If description changed, delete AI recommendation
+      if (story.description !== (description || null)) {
+        await this.deleteAIRecommendation(storyId);
+      }
+
       // Update the story
       const updatedStory = await this.prisma.story.update({
         where: { id: storyId },
@@ -319,9 +324,12 @@ export class SessionManager {
 
       if (!story) return false;
 
-      // Use transaction to delete votes and update story
+      // Use transaction to delete votes, AI recommendation, and update story
       await this.prisma.$transaction([
         this.prisma.vote.deleteMany({
+          where: { storyId },
+        }),
+        this.prisma.aIRecommendation.deleteMany({
           where: { storyId },
         }),
         this.prisma.story.update({
@@ -400,6 +408,7 @@ export class SessionManager {
   async getStoryWithVotes(sessionId: string, storyId: string): Promise<{
     story: Story;
     userNames: Map<string, string>;
+    voteModifiers: Map<string, string | null>;
   } | null> {
     try {
       const story = await this.prisma.story.findFirst({
@@ -422,6 +431,10 @@ export class SessionManager {
         story.votes.map((v) => [v.userId, v.user.name])
       );
 
+      const voteModifiers = new Map(
+        story.votes.map((v) => [v.userId, v.modifier])
+      );
+
       return {
         story: {
           id: story.id,
@@ -432,6 +445,7 @@ export class SessionManager {
           revealed: story.revealed,
         },
         userNames,
+        voteModifiers,
       };
     } catch (error) {
       console.error('Error getting story with votes:', error);
@@ -489,6 +503,7 @@ export class SessionManager {
             },
             include: {
               votes: true,
+              aiRecommendation: true,
             },
             orderBy: [
               { isFocused: 'desc' },   // Focused stories first
@@ -531,6 +546,11 @@ export class SessionManager {
           revealed: story.revealed,
           isFocused: story.isFocused,
           votes,
+          aiRecommendation: story.aiRecommendation ? {
+            shouldBreakdown: story.aiRecommendation.shouldBreakdown,
+            recommendation: story.aiRecommendation.recommendation ?? undefined,
+            suggestedStories: story.aiRecommendation.suggestedStories ? (story.aiRecommendation.suggestedStories as string[]) : undefined,
+          } : undefined,
         };
       });
 
@@ -555,6 +575,46 @@ export class SessionManager {
     } catch (error) {
       console.error('Error getting user name:', error);
       return null;
+    }
+  }
+
+  async saveAIRecommendation(
+    storyId: string,
+    shouldBreakdown: boolean,
+    recommendation?: string,
+    suggestedStories?: string[]
+  ): Promise<boolean> {
+    try {
+      await this.prisma.aIRecommendation.upsert({
+        where: { storyId },
+        create: {
+          storyId,
+          shouldBreakdown,
+          recommendation,
+          suggestedStories: suggestedStories || [],
+        },
+        update: {
+          shouldBreakdown,
+          recommendation,
+          suggestedStories: suggestedStories || [],
+        },
+      });
+      return true;
+    } catch (error) {
+      console.error('Error saving AI recommendation:', error);
+      return false;
+    }
+  }
+
+  async deleteAIRecommendation(storyId: string): Promise<boolean> {
+    try {
+      await this.prisma.aIRecommendation.deleteMany({
+        where: { storyId },
+      });
+      return true;
+    } catch (error) {
+      console.error('Error deleting AI recommendation:', error);
+      return false;
     }
   }
 

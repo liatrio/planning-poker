@@ -40,7 +40,7 @@ export const Session = () => {
   const [collapsedStories, setCollapsedStories] = useState<Set<string>>(new Set());
   const [seenStories, setSeenStories] = useState<Set<string>>(new Set());
 
-  const { connected, users, stories, currentUserId, sendMessage, revealedVotesMap, error } = useWebSocket(
+  const { connected, users, stories, currentUserId, sendMessage, revealedVotesMap, aiRecommendationsMap, aiLoadingMap, error } = useWebSocket(
     sessionId || null,
     userName
   );
@@ -413,6 +413,7 @@ export const Session = () => {
     story,
     revealedVotes: revealedVotesMap.get(story.id) || [],
     average: calculateAverageFromVotes(revealedVotesMap.get(story.id) || []),
+    aiRecommendation: aiRecommendationsMap.get(story.id) || null,
   }));
 
   // Sort active stories: focused first, then by creation time (newer first)
@@ -464,6 +465,8 @@ export const Session = () => {
                   selectedModifier={selectedModifiersMap.get(story.id) || null}
                   showIframe={showIframeMap.get(story.id) || false}
                   revealedVotes={revealedVotesMap.get(story.id) || null}
+                  aiRecommendation={aiRecommendationsMap.get(story.id) || null}
+                  aiLoading={aiLoadingMap.get(story.id) || false}
                   average={calculateAverage(story.id)}
                   voteCount={getVoteCount(story)}
                   totalUsers={users.length}

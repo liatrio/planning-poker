@@ -46,6 +46,8 @@ export enum MessageType {
   STORY_FOCUSED = 'story_focused',
   UNFOCUS_STORY = 'unfocus_story',
   STORY_UNFOCUSED = 'story_unfocused',
+  AI_ANALYSIS_STARTED = 'ai_analysis_started',
+  AI_RECOMMENDATION = 'ai_recommendation',
   SESSION_STATE = 'session_state',
   ERROR = 'error'
 }
@@ -169,6 +171,19 @@ export interface StoryUnfocusedMessage {
   type: MessageType.STORY_UNFOCUSED;
 }
 
+export interface AIAnalysisStartedMessage {
+  type: MessageType.AI_ANALYSIS_STARTED;
+  storyId: string;
+}
+
+export interface AIRecommendationMessage {
+  type: MessageType.AI_RECOMMENDATION;
+  storyId: string;
+  shouldBreakdown: boolean;
+  recommendation?: string;
+  suggestedStories?: string[];
+}
+
 export interface SessionStateMessage {
   type: MessageType.SESSION_STATE;
   users: Array<{ id: string; name: string }>;
@@ -198,5 +213,7 @@ export type ServerMessage =
   | VotesResetMessage
   | StoryFocusedMessage
   | StoryUnfocusedMessage
+  | AIAnalysisStartedMessage
+  | AIRecommendationMessage
   | SessionStateMessage
   | ErrorMessage;

@@ -1,3 +1,11 @@
+import { TipTapRenderer } from './TipTapRenderer';
+
+interface AIRecommendation {
+  shouldBreakdown: boolean;
+  recommendation?: string;
+  suggestedStories?: string[];
+}
+
 interface PastStory {
   story: {
     id: string;
@@ -8,6 +16,7 @@ interface PastStory {
   };
   revealedVotes: Array<{ userId: string; userName: string; value: string | null }>;
   average: string | null;
+  aiRecommendation: AIRecommendation | null;
 }
 
 interface PastStoriesProps {
@@ -43,62 +52,87 @@ export const PastStories = ({
 
   return (
     <div style={styles.pastStoriesSection}>
-      <h2 style={styles.pastStoriesTitle}>Past Stories</h2>
-      {pastStories.map((pastStory) => {
-        const isExpanded = expandedStories.has(pastStory.story.id);
-        return (
-          <div key={pastStory.story.id} style={styles.pastStoryCard}>
-            <div
-              style={styles.pastStoryHeader}
-              onClick={() => onToggleExpanded(pastStory.story.id)}
-            >
-              <div style={styles.pastStoryHeaderContent}>
-                <span style={styles.expandIcon}>{isExpanded ? '▼' : '▶'}</span>
-                <h3 style={styles.pastStoryTitle}>{pastStory.story.name}</h3>
-                {pastStory.average && (
-                  <span style={styles.pastStoryAverage}>Avg: {pastStory.average}</span>
-                )}
+        <h2 style={styles.pastStoriesTitle}>Past Stories</h2>
+        {pastStories.map((pastStory) => {
+          const isExpanded = expandedStories.has(pastStory.story.id);
+          const hasAiRecommendation = pastStory.aiRecommendation?.shouldBreakdown || false;
+          return (
+            <div key={pastStory.story.id} style={styles.pastStoryCard}>
+              <div
+                style={styles.pastStoryHeader}
+                onClick={() => onToggleExpanded(pastStory.story.id)}
+              >
+                <div style={styles.pastStoryHeaderContent}>
+                  <span style={styles.expandIcon}>{isExpanded ? '▼' : '▶'}</span>
+                  {hasAiRecommendation && <span style={styles.aiIconHeader}>🤖</span>}
+                  <h3 style={styles.pastStoryTitle}>{pastStory.story.name}</h3>
+                  {pastStory.average && (
+                    <span style={styles.pastStoryAverage}>Avg: {pastStory.average}</span>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {isExpanded && (
-              <div style={styles.pastStoryContent}>
-                {pastStory.story.description && (
-                  <div
-                    style={styles.pastStoryDescription}
-                    dangerouslySetInnerHTML={{ __html: pastStory.story.description }}
-                  />
-                )}
-                {pastStory.story.url && (
-                  <a
-                    href={pastStory.story.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={styles.urlLink}
-                  >
-                    {pastStory.story.url}
-                  </a>
-                )}
+              {isExpanded && (
+                <div style={styles.pastStoryContent}>
+                  {pastStory.story.description && (
+                    <TipTapRenderer
+                      content={pastStory.story.description}
+                      darkMode={darkMode}
+                      style={styles.pastStoryDescription}
+                    />
+                  )}
+                  {pastStory.story.url && (
+                    <a
+                      href={pastStory.story.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={styles.urlLink}
+                    >
+                      {pastStory.story.url}
+                    </a>
+                  )}
 
-                {pastStory.revealedVotes.length > 0 && (
-                  <div style={styles.pastStoryVotes}>
-                    <h4 style={styles.pastStoryVotesTitle}>Votes</h4>
-                    <div style={styles.votesGrid}>
-                      {pastStory.revealedVotes.map((vote) => (
-                        <div key={vote.userId} style={styles.voteResult}>
-                          <div style={styles.voteName}>{vote.userName}</div>
-                          <div style={styles.voteValue}>{vote.value ?? '-'}</div>
-                        </div>
-                      ))}
+                  {pastStory.revealedVotes.length > 0 && (
+                    <div style={styles.pastStoryVotes}>
+                      <h4 style={styles.pastStoryVotesTitle}>Votes</h4>
+                      <div style={styles.votesGrid}>
+                        {pastStory.revealedVotes.map((vote) => (
+                          <div key={vote.userId} style={styles.voteResult}>
+                            <div style={styles.voteName}>{vote.userName}</div>
+                            <div style={styles.voteValue}>{vote.value ?? '-'}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+                  )}
+
+                  {pastStory.aiRecommendation && pastStory.aiRecommendation.shouldBreakdown && (
+                    <div style={styles.aiRecommendation}>
+                      <div style={styles.aiRecommendationHeader}>
+                        <span style={styles.aiIcon}>🤖</span>
+                        <h4 style={styles.aiTitle}>AI Recommendation</h4>
+                      </div>
+                      <p style={styles.aiText}>{pastStory.aiRecommendation.recommendation}</p>
+                      {pastStory.aiRecommendation.suggestedStories && pastStory.aiRecommendation.suggestedStories.length > 0 && (
+                        <div style={styles.suggestedStories}>
+                          <h5 style={styles.suggestedStoriesTitle}>Suggested breakdown:</h5>
+                          <ul style={styles.suggestedStoriesList}>
+                            {pastStory.aiRecommendation.suggestedStories.map((suggestedStory, index) => (
+                              <li key={index} style={styles.suggestedStoryItem}>
+                                {suggestedStory}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
   );
 };
 
@@ -133,6 +167,10 @@ const getStyles = (colors: any, darkMode: boolean): { [key: string]: React.CSSPr
   expandIcon: {
     fontSize: '14px',
     color: colors.textSecondary,
+    minWidth: '20px',
+  },
+  aiIconHeader: {
+    fontSize: '18px',
     minWidth: '20px',
   },
   pastStoryTitle: {
@@ -193,5 +231,51 @@ const getStyles = (colors: any, darkMode: boolean): { [key: string]: React.CSSPr
     fontSize: '24px',
     fontWeight: 'bold',
     color: colors.text,
+  },
+  aiRecommendation: {
+    marginTop: '20px',
+    padding: '16px',
+    backgroundColor: colors.surface,
+    border: `2px solid ${colors.primary}`,
+    borderRadius: '8px',
+  },
+  aiRecommendationHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '12px',
+  },
+  aiIcon: {
+    fontSize: '20px',
+  },
+  aiTitle: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: colors.text,
+    margin: 0,
+  },
+  aiText: {
+    fontSize: '14px',
+    color: colors.text,
+    lineHeight: '1.5',
+    margin: '0 0 12px 0',
+  },
+  suggestedStories: {
+    marginTop: '12px',
+  },
+  suggestedStoriesTitle: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: colors.text,
+    margin: '0 0 8px 0',
+  },
+  suggestedStoriesList: {
+    margin: '0',
+    paddingLeft: '20px',
+  },
+  suggestedStoryItem: {
+    fontSize: '14px',
+    color: colors.text,
+    lineHeight: '1.8',
   },
 });

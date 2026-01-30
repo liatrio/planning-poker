@@ -2,7 +2,10 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { SessionManager } from './sessionManager';
+import { AIProviderFactory } from './ai/AIProviderFactory';
 import {
   ClientMessage,
   MessageType,
@@ -16,6 +19,8 @@ import {
   VotesResetMessage,
   StoryFocusedMessage,
   StoryUnfocusedMessage,
+  AIAnalysisStartedMessage,
+  AIRecommendationMessage,
 } from './types';
 
 const app = express();
@@ -27,6 +32,17 @@ const wss = new WebSocketServer({ server });
 
 const sessionManager = new SessionManager();
 const userToSession = new Map<WebSocket, { sessionId: string; userId: string }>();
+const aiProvider = AIProviderFactory.createProvider();
+
+// Load AI rules file if it exists
+let aiRules: string | undefined;
+try {
+  const rulesPath = join(__dirname, '..', 'ai-rules.txt');
+  aiRules = readFileSync(rulesPath, 'utf-8');
+  console.log('AI rules file loaded successfully');
+} catch (error) {
+  console.log('No AI rules file found, using default prompts');
+}
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
@@ -183,19 +199,144 @@ wss.on('connection', (ws: WebSocket) => {
           const storyData = await sessionManager.getStoryWithVotes(sessionInfo.sessionId, storyId);
 
           if (storyData) {
-            const votes = Array.from(storyData.story.votes.entries()).map(([userId, value]) => ({
+            // Get raw votes with their modifiers
+            const rawVotes = Array.from(storyData.story.votes.entries()).map(([userId, value]) => ({
               userId,
               userName: storyData.userNames.get(userId) || 'Unknown',
               value,
+              modifier: storyData.voteModifiers.get(userId) || null,
             }));
 
+            // Calculate consensus value (mode - most common vote) from numeric votes
+            const numericVotes = rawVotes
+              .map(v => v.value ? parseFloat(v.value) : null)
+              .filter((v): v is number => v !== null && !isNaN(v));
+
+            let consensus: number | null = null;
+            if (numericVotes.length > 0) {
+              // Find the mode (most common vote value)
+              const voteCounts = new Map<number, number>();
+              numericVotes.forEach(vote => {
+                voteCounts.set(vote, (voteCounts.get(vote) || 0) + 1);
+              });
+
+              // Get the vote value with the highest count
+              let maxCount = 0;
+              let modeValue: number | null = null;
+              voteCounts.forEach((count, value) => {
+                if (count > maxCount) {
+                  maxCount = count;
+                  modeValue = value;
+                }
+              });
+
+              consensus = modeValue;
+            }
+
+            // Apply modifiers to adjust votes
+            const adjustedVotes = rawVotes.map(vote => {
+              if (vote.value && consensus !== null && !isNaN(parseFloat(vote.value))) {
+                const numericValue = parseFloat(vote.value);
+                let adjustedValue = numericValue;
+
+                // Apply soft_up: if vote < consensus, adjust up to consensus
+                if (vote.modifier === 'soft_up' && numericValue < consensus) {
+                  adjustedValue = consensus;
+                  console.log(`Applied soft_up to user ${vote.userId}: ${numericValue} -> ${adjustedValue}`);
+                }
+                // Apply soft_down: if vote > consensus, adjust down to consensus
+                else if (vote.modifier === 'soft_down' && numericValue > consensus) {
+                  adjustedValue = consensus;
+                  console.log(`Applied soft_down to user ${vote.userId}: ${numericValue} -> ${adjustedValue}`);
+                }
+
+                return {
+                  userId: vote.userId,
+                  userName: vote.userName,
+                  value: adjustedValue.toString(),
+                };
+              }
+
+              // Non-numeric votes or no consensus, return as-is
+              return {
+                userId: vote.userId,
+                userName: vote.userName,
+                value: vote.value,
+              };
+            });
+
+            // Calculate average from adjusted numeric votes for AI
+            const adjustedNumericVotes = adjustedVotes
+              .map(v => v.value ? parseFloat(v.value) : null)
+              .filter((v): v is number => v !== null && !isNaN(v));
+
+            let willRunAI = false;
+            let adjustedAverage = 0;
+            if (adjustedNumericVotes.length > 0) {
+              adjustedAverage = adjustedNumericVotes.reduce((sum, v) => sum + v, 0) / adjustedNumericVotes.length;
+              willRunAI = adjustedAverage > 1 && !!storyData.story.description;
+            }
+
+            // Send AI_ANALYSIS_STARTED first if AI will run
+            if (willRunAI) {
+              const aiAnalysisStarted: AIAnalysisStartedMessage = {
+                type: MessageType.AI_ANALYSIS_STARTED,
+                storyId,
+              };
+              await sessionManager.broadcast(sessionInfo.sessionId, aiAnalysisStarted);
+              console.log(`AI analysis started for story ${storyId}`);
+            }
+
+            // Then send VOTES_REVEALED with adjusted votes
             const votesRevealed: VotesRevealedMessage = {
               type: MessageType.VOTES_REVEALED,
               storyId,
-              votes,
+              votes: adjustedVotes,
             };
             await sessionManager.broadcast(sessionInfo.sessionId, votesRevealed);
-            console.log(`Votes revealed for story ${storyId} in session ${sessionInfo.sessionId}`);
+            console.log(`Votes revealed for story ${storyId} in session ${sessionInfo.sessionId} (consensus: ${consensus})`);
+
+            // Run AI analysis if conditions are met, using adjusted average
+            if (willRunAI && adjustedNumericVotes.length > 0) {
+              console.log(`Triggering AI analysis for story ${storyId} (adjusted avg: ${adjustedAverage})`);
+
+              // Run AI analysis in the background (don't await)
+              aiProvider.analyzeStory({
+                storyName: storyData.story.name,
+                description: storyData.story.description!,
+                averageVotes: adjustedAverage,
+                rules: aiRules,
+              }).then(async analysis => {
+                // Save to database
+                await sessionManager.saveAIRecommendation(
+                  storyId,
+                  analysis.shouldBreakdown,
+                  analysis.recommendation,
+                  analysis.suggestedStories
+                );
+
+                const aiRecommendation: AIRecommendationMessage = {
+                  type: MessageType.AI_RECOMMENDATION,
+                  storyId,
+                  shouldBreakdown: analysis.shouldBreakdown,
+                  recommendation: analysis.recommendation,
+                  suggestedStories: analysis.suggestedStories,
+                };
+                sessionManager.broadcast(sessionInfo.sessionId, aiRecommendation);
+                console.log(`AI recommendation sent for story ${storyId}`);
+              }).catch(async error => {
+                console.error(`Error analyzing story ${storyId}:`, error);
+                // On error, still save and send a message to remove loading state
+                await sessionManager.saveAIRecommendation(storyId, false);
+
+                const aiRecommendation: AIRecommendationMessage = {
+                  type: MessageType.AI_RECOMMENDATION,
+                  storyId,
+                  shouldBreakdown: false,
+                };
+                sessionManager.broadcast(sessionInfo.sessionId, aiRecommendation);
+              });
+            }
           }
           break;
         }

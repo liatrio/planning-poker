@@ -8,6 +8,12 @@ import {
   Story,
 } from './types';
 
+interface AIRecommendation {
+  shouldBreakdown: boolean;
+  recommendation?: string;
+  suggestedStories?: string[];
+}
+
 interface UseWebSocketReturn {
   connected: boolean;
   users: User[];
@@ -15,6 +21,8 @@ interface UseWebSocketReturn {
   currentUserId: string | null;
   sendMessage: (message: ClientMessage) => void;
   revealedVotesMap: Map<string, Array<{ userId: string; userName: string; value: string | null }>>;
+  aiRecommendationsMap: Map<string, AIRecommendation>;
+  aiLoadingMap: Map<string, boolean>;
   error: string | null;
 }
 
@@ -27,6 +35,8 @@ export const useWebSocket = (
   const [stories, setStories] = useState<Story[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [revealedVotesMap, setRevealedVotesMap] = useState<Map<string, Array<{ userId: string; userName: string; value: string | null }>>>(new Map());
+  const [aiRecommendationsMap, setAiRecommendationsMap] = useState<Map<string, AIRecommendation>>(new Map());
+  const [aiLoadingMap, setAiLoadingMap] = useState<Map<string, boolean>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const ws = useRef<WebSocket | null>(null);
 
@@ -80,6 +90,16 @@ export const useWebSocket = (
             if (currentUser) {
               setCurrentUserId(currentUser.id);
             }
+            // Load AI recommendations from session state
+            setAiRecommendationsMap((prev) => {
+              const newMap = new Map(prev);
+              message.stories.forEach(story => {
+                if (story.aiRecommendation) {
+                  newMap.set(story.id, story.aiRecommendation);
+                }
+              });
+              return newMap;
+            });
             setError(null);
             break;
 
@@ -112,6 +132,12 @@ export const useWebSocket = (
                 ? { ...story, ...message.story }
                 : story
             ));
+            // Clear AI recommendation when story is updated
+            setAiRecommendationsMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(message.story.id);
+              return newMap;
+            });
             break;
 
           case MessageType.VOTE_UPDATE:
@@ -173,6 +199,12 @@ export const useWebSocket = (
               newMap.delete(message.storyId);
               return newMap;
             });
+            // Clear AI recommendation when votes are reset
+            setAiRecommendationsMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(message.storyId);
+              return newMap;
+            });
             setStories((prev) => prev.map(story =>
               story.id === message.storyId
                 ? { ...story, votes: [], revealed: false }
@@ -192,6 +224,33 @@ export const useWebSocket = (
               ...story,
               isFocused: false,
             })));
+            break;
+
+          case MessageType.AI_ANALYSIS_STARTED:
+            setAiLoadingMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(message.storyId, true);
+              return newMap;
+            });
+            console.log('AI analysis started for story:', message.storyId);
+            break;
+
+          case MessageType.AI_RECOMMENDATION:
+            setAiLoadingMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(message.storyId);
+              return newMap;
+            });
+            setAiRecommendationsMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(message.storyId, {
+                shouldBreakdown: message.shouldBreakdown,
+                recommendation: message.recommendation,
+                suggestedStories: message.suggestedStories,
+              });
+              return newMap;
+            });
+            console.log('AI recommendation received for story:', message.storyId);
             break;
 
           case MessageType.ERROR:
@@ -240,6 +299,8 @@ export const useWebSocket = (
     currentUserId,
     sendMessage,
     revealedVotesMap,
+    aiRecommendationsMap,
+    aiLoadingMap,
     error,
   };
 };

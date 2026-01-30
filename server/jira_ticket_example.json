@@ -1,0 +1,766 @@
+{
+  "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+  "id": "1654793",
+  "self": "https://daicompanies.atlassian.net/rest/api/3/issue/1654793",
+  "key": "ODSVAN-2594",
+  "fields": {
+    "attachment": [
+      {
+        "self": "https://daicompanies.atlassian.net/rest/api/3/attachment/635982",
+        "id": "635982",
+        "filename": "image-20251001-162613.png",
+        "author": {
+          "self": "https://daicompanies.atlassian.net/rest/api/3/user?accountId=712020%3A1487ae24-9f85-43bc-aedd-6b4e5dfbde60",
+          "accountId": "712020:1487ae24-9f85-43bc-aedd-6b4e5dfbde60",
+          "emailAddress": "mitch.schaller@oneildata.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/add4b8d20840b34e0e583c0a7e329c95?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMS-0.png",
+            "24x24": "https://secure.gravatar.com/avatar/add4b8d20840b34e0e583c0a7e329c95?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMS-0.png",
+            "16x16": "https://secure.gravatar.com/avatar/add4b8d20840b34e0e583c0a7e329c95?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMS-0.png",
+            "32x32": "https://secure.gravatar.com/avatar/add4b8d20840b34e0e583c0a7e329c95?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMS-0.png"
+          },
+          "displayName": "Mitch Schaller",
+          "active": true,
+          "timeZone": "Etc/UTC",
+          "accountType": "atlassian"
+        },
+        "created": "2025-10-01T16:50:32.950+0000",
+        "size": 339017,
+        "mimeType": "image/png",
+        "content": "https://daicompanies.atlassian.net/rest/api/3/attachment/content/635982",
+        "thumbnail": "https://daicompanies.atlassian.net/rest/api/3/attachment/thumbnail/635982"
+      },
+      {
+        "self": "https://daicompanies.atlassian.net/rest/api/3/attachment/635983",
+        "id": "635983",
+        "filename": "image-20251001-162658.png",
+        "author": {
+          "self": "https://daicompanies.atlassian.net/rest/api/3/user?accountId=712020%3A1487ae24-9f85-43bc-aedd-6b4e5dfbde60",
+          "accountId": "712020:1487ae24-9f85-43bc-aedd-6b4e5dfbde60",
+          "emailAddress": "mitch.schaller@oneildata.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/add4b8d20840b34e0e583c0a7e329c95?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMS-0.png",
+            "24x24": "https://secure.gravatar.com/avatar/add4b8d20840b34e0e583c0a7e329c95?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMS-0.png",
+            "16x16": "https://secure.gravatar.com/avatar/add4b8d20840b34e0e583c0a7e329c95?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMS-0.png",
+            "32x32": "https://secure.gravatar.com/avatar/add4b8d20840b34e0e583c0a7e329c95?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FMS-0.png"
+          },
+          "displayName": "Mitch Schaller",
+          "active": true,
+          "timeZone": "Etc/UTC",
+          "accountType": "atlassian"
+        },
+        "created": "2025-10-01T16:50:33.297+0000",
+        "size": 238260,
+        "mimeType": "image/png",
+        "content": "https://daicompanies.atlassian.net/rest/api/3/attachment/content/635983",
+        "thumbnail": "https://daicompanies.atlassian.net/rest/api/3/attachment/thumbnail/635983"
+      },
+      {
+        "self": "https://daicompanies.atlassian.net/rest/api/3/attachment/636387",
+        "id": "636387",
+        "filename": "image-20251001-224903.png",
+        "author": {
+          "self": "https://daicompanies.atlassian.net/rest/api/3/user?accountId=712020%3A33d9e2d4-374f-41cb-abc7-8d51d3a16c7e",
+          "accountId": "712020:33d9e2d4-374f-41cb-abc7-8d51d3a16c7e",
+          "emailAddress": "levi.fuller@daicompanies.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/0121dd80051f2c985726ec2d43c2c0ef?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FLF-6.png",
+            "24x24": "https://secure.gravatar.com/avatar/0121dd80051f2c985726ec2d43c2c0ef?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FLF-6.png",
+            "16x16": "https://secure.gravatar.com/avatar/0121dd80051f2c985726ec2d43c2c0ef?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FLF-6.png",
+            "32x32": "https://secure.gravatar.com/avatar/0121dd80051f2c985726ec2d43c2c0ef?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FLF-6.png"
+          },
+          "displayName": "Levi Fuller",
+          "active": true,
+          "timeZone": "Etc/UTC",
+          "accountType": "atlassian"
+        },
+        "created": "2025-10-01T22:49:23.948+0000",
+        "size": 227518,
+        "mimeType": "image/png",
+        "content": "https://daicompanies.atlassian.net/rest/api/3/attachment/content/636387",
+        "thumbnail": "https://daicompanies.atlassian.net/rest/api/3/attachment/thumbnail/636387"
+      },
+      {
+        "self": "https://daicompanies.atlassian.net/rest/api/3/attachment/636392",
+        "id": "636392",
+        "filename": "image-20251001-225833.png",
+        "author": {
+          "self": "https://daicompanies.atlassian.net/rest/api/3/user?accountId=712020%3A33d9e2d4-374f-41cb-abc7-8d51d3a16c7e",
+          "accountId": "712020:33d9e2d4-374f-41cb-abc7-8d51d3a16c7e",
+          "emailAddress": "levi.fuller@daicompanies.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/0121dd80051f2c985726ec2d43c2c0ef?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FLF-6.png",
+            "24x24": "https://secure.gravatar.com/avatar/0121dd80051f2c985726ec2d43c2c0ef?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FLF-6.png",
+            "16x16": "https://secure.gravatar.com/avatar/0121dd80051f2c985726ec2d43c2c0ef?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FLF-6.png",
+            "32x32": "https://secure.gravatar.com/avatar/0121dd80051f2c985726ec2d43c2c0ef?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FLF-6.png"
+          },
+          "displayName": "Levi Fuller",
+          "active": true,
+          "timeZone": "Etc/UTC",
+          "accountType": "atlassian"
+        },
+        "created": "2025-10-01T22:58:39.735+0000",
+        "size": 118264,
+        "mimeType": "image/png",
+        "content": "https://daicompanies.atlassian.net/rest/api/3/attachment/content/636392",
+        "thumbnail": "https://daicompanies.atlassian.net/rest/api/3/attachment/thumbnail/636392"
+      },
+      {
+        "self": "https://daicompanies.atlassian.net/rest/api/3/attachment/663111",
+        "id": "663111",
+        "filename": "image-20251025-024011.png",
+        "author": {
+          "self": "https://daicompanies.atlassian.net/rest/api/3/user?accountId=712020%3Aff6578a2-2197-4427-9f07-d632d7ad9b48",
+          "accountId": "712020:ff6578a2-2197-4427-9f07-d632d7ad9b48",
+          "emailAddress": "robert.hamilton@oneildata.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "24x24": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "16x16": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "32x32": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png"
+          },
+          "displayName": "Robert Hamilton",
+          "active": true,
+          "timeZone": "US/Eastern",
+          "accountType": "atlassian"
+        },
+        "created": "2025-10-25T03:08:27.432+0000",
+        "size": 24724,
+        "mimeType": "image/png",
+        "content": "https://daicompanies.atlassian.net/rest/api/3/attachment/content/663111",
+        "thumbnail": "https://daicompanies.atlassian.net/rest/api/3/attachment/thumbnail/663111"
+      },
+      {
+        "self": "https://daicompanies.atlassian.net/rest/api/3/attachment/663107",
+        "id": "663107",
+        "filename": "image-20251025-024144.png",
+        "author": {
+          "self": "https://daicompanies.atlassian.net/rest/api/3/user?accountId=712020%3Aff6578a2-2197-4427-9f07-d632d7ad9b48",
+          "accountId": "712020:ff6578a2-2197-4427-9f07-d632d7ad9b48",
+          "emailAddress": "robert.hamilton@oneildata.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "24x24": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "16x16": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "32x32": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png"
+          },
+          "displayName": "Robert Hamilton",
+          "active": true,
+          "timeZone": "US/Eastern",
+          "accountType": "atlassian"
+        },
+        "created": "2025-10-25T03:08:25.842+0000",
+        "size": 15724,
+        "mimeType": "image/png",
+        "content": "https://daicompanies.atlassian.net/rest/api/3/attachment/content/663107",
+        "thumbnail": "https://daicompanies.atlassian.net/rest/api/3/attachment/thumbnail/663107"
+      },
+      {
+        "self": "https://daicompanies.atlassian.net/rest/api/3/attachment/663110",
+        "id": "663110",
+        "filename": "image-20251025-024712.png",
+        "author": {
+          "self": "https://daicompanies.atlassian.net/rest/api/3/user?accountId=712020%3Aff6578a2-2197-4427-9f07-d632d7ad9b48",
+          "accountId": "712020:ff6578a2-2197-4427-9f07-d632d7ad9b48",
+          "emailAddress": "robert.hamilton@oneildata.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "24x24": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "16x16": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "32x32": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png"
+          },
+          "displayName": "Robert Hamilton",
+          "active": true,
+          "timeZone": "US/Eastern",
+          "accountType": "atlassian"
+        },
+        "created": "2025-10-25T03:08:27.070+0000",
+        "size": 42136,
+        "mimeType": "image/png",
+        "content": "https://daicompanies.atlassian.net/rest/api/3/attachment/content/663110",
+        "thumbnail": "https://daicompanies.atlassian.net/rest/api/3/attachment/thumbnail/663110"
+      },
+      {
+        "self": "https://daicompanies.atlassian.net/rest/api/3/attachment/663108",
+        "id": "663108",
+        "filename": "image-20251025-030041.png",
+        "author": {
+          "self": "https://daicompanies.atlassian.net/rest/api/3/user?accountId=712020%3Aff6578a2-2197-4427-9f07-d632d7ad9b48",
+          "accountId": "712020:ff6578a2-2197-4427-9f07-d632d7ad9b48",
+          "emailAddress": "robert.hamilton@oneildata.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "24x24": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "16x16": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "32x32": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png"
+          },
+          "displayName": "Robert Hamilton",
+          "active": true,
+          "timeZone": "US/Eastern",
+          "accountType": "atlassian"
+        },
+        "created": "2025-10-25T03:08:26.324+0000",
+        "size": 31868,
+        "mimeType": "image/png",
+        "content": "https://daicompanies.atlassian.net/rest/api/3/attachment/content/663108",
+        "thumbnail": "https://daicompanies.atlassian.net/rest/api/3/attachment/thumbnail/663108"
+      },
+      {
+        "self": "https://daicompanies.atlassian.net/rest/api/3/attachment/663109",
+        "id": "663109",
+        "filename": "image-20251025-030639.png",
+        "author": {
+          "self": "https://daicompanies.atlassian.net/rest/api/3/user?accountId=712020%3Aff6578a2-2197-4427-9f07-d632d7ad9b48",
+          "accountId": "712020:ff6578a2-2197-4427-9f07-d632d7ad9b48",
+          "emailAddress": "robert.hamilton@oneildata.com",
+          "avatarUrls": {
+            "48x48": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "24x24": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "16x16": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png",
+            "32x32": "https://secure.gravatar.com/avatar/2e34c80f3caf15086c7384b6d641c6eb?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FRH-4.png"
+          },
+          "displayName": "Robert Hamilton",
+          "active": true,
+          "timeZone": "US/Eastern",
+          "accountType": "atlassian"
+        },
+        "created": "2025-10-25T03:08:26.752+0000",
+        "size": 19448,
+        "mimeType": "image/png",
+        "content": "https://daicompanies.atlassian.net/rest/api/3/attachment/content/663109",
+        "thumbnail": "https://daicompanies.atlassian.net/rest/api/3/attachment/thumbnail/663109"
+      }
+    ],
+    "description": {
+      "type": "doc",
+      "version": 1,
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "The intent of this feature is build a PoC / MVP version of the WYSIWYG GrapeJS editor in accordance with the base mocks and integration requirements. On completion of this work and any outstanding base Template Engine work, the goal is to be able to plug in to the full campaign execution PoC workflow and see master images created end-to-end. "
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "The core goal is to design the interface with pieces such that we can plug and play with other implementations of the PDF gen such as PDFKit/Lib. "
+            }
+          ]
+        },
+        {
+          "type": "mediaSingle",
+          "attrs": { "layout": "align-start" },
+          "content": [
+            {
+              "type": "media",
+              "attrs": {
+                "type": "file",
+                "id": "89e1e3a0-6381-496b-8fee-2cc129ceb1f0",
+                "alt": "image-20251001-162613.png",
+                "collection": "",
+                "height": 1800,
+                "width": 2685
+              }
+            }
+          ]
+        },
+        {
+          "type": "mediaSingle",
+          "attrs": { "layout": "align-start" },
+          "content": [
+            {
+              "type": "media",
+              "attrs": {
+                "type": "file",
+                "id": "0aa25074-63af-457a-b6fb-ee87ef6db17b",
+                "alt": "image-20251001-162658.png",
+                "collection": "",
+                "height": 1739,
+                "width": 2611
+              }
+            }
+          ]
+        },
+        {
+          "type": "bulletList",
+          "content": [
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Canvas Sidepanel - Elements Tab"
+                    }
+                  ]
+                },
+                {
+                  "type": "mediaSingle",
+                  "attrs": { "layout": "align-start" },
+                  "content": [
+                    {
+                      "type": "media",
+                      "attrs": {
+                        "type": "file",
+                        "id": "e87cd9c5-d814-4451-b4fe-59000f48cd0c",
+                        "alt": "image-20251001-224903.png",
+                        "collection": "",
+                        "height": 378,
+                        "width": 606
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Canvas Sidepanel - Library Variables Tab"
+                    }
+                  ]
+                },
+                {
+                  "type": "mediaSingle",
+                  "attrs": { "layout": "align-start" },
+                  "content": [
+                    {
+                      "type": "media",
+                      "attrs": {
+                        "type": "file",
+                        "id": "20b30de2-d8d6-4ae8-92b5-5186716c3b3d",
+                        "alt": "image-20251001-225833.png",
+                        "collection": "",
+                        "height": 486,
+                        "width": 776
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Figma Mocks",
+              "marks": [
+                {
+                  "type": "link",
+                  "attrs": {
+                    "href": "https://www.figma.com/design/wUYPmkfvIECb9NCKaWMfgU/Template-Manager?node-id=6267-70670&t=ioHwpVthhJsylylE-4"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "Requirements",
+              "marks": [{ "type": "strong" }]
+            }
+          ]
+        },
+        {
+          "type": "bulletList",
+          "content": [
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "GrapeJS library implemented as core driver of edit template functionality"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Wrapper interface created with core elements known to be needed independent of WYSIWYG library"
+                    }
+                  ]
+                },
+                {
+                  "type": "bulletList",
+                  "content": [
+                    {
+                      "type": "listItem",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            { "type": "text", "text": "Collapsible left panel" }
+                          ]
+                        },
+                        {
+                          "type": "bulletList",
+                          "content": [
+                            {
+                              "type": "listItem",
+                              "content": [
+                                {
+                                  "type": "paragraph",
+                                  "content": [
+                                    { "type": "text", "text": "File tab" }
+                                  ]
+                                },
+                                {
+                                  "type": "bulletList",
+                                  "content": [
+                                    {
+                                      "type": "listItem",
+                                      "content": [
+                                        {
+                                          "type": "paragraph",
+                                          "content": [
+                                            {
+                                              "type": "text",
+                                              "text": "View pages"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "listItem",
+                                      "content": [
+                                        {
+                                          "type": "paragraph",
+                                          "content": [
+                                            {
+                                              "type": "text",
+                                              "text": "View layers / nested components"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "listItem",
+                              "content": [
+                                {
+                                  "type": "paragraph",
+                                  "content": [
+                                    { "type": "text", "text": "Elements tab" }
+                                  ]
+                                },
+                                {
+                                  "type": "bulletList",
+                                  "content": [
+                                    {
+                                      "type": "listItem",
+                                      "content": [
+                                        {
+                                          "type": "paragraph",
+                                          "content": [
+                                            { "type": "text", "text": "Text" }
+                                          ]
+                                        },
+                                        {
+                                          "type": "bulletList",
+                                          "content": [
+                                            {
+                                              "type": "listItem",
+                                              "content": [
+                                                {
+                                                  "type": "paragraph",
+                                                  "content": [
+                                                    {
+                                                      "type": "text",
+                                                      "text": "Font support"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "listItem",
+                                      "content": [
+                                        {
+                                          "type": "paragraph",
+                                          "content": [
+                                            { "type": "text", "text": "Images" }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "listItem",
+                              "content": [
+                                {
+                                  "type": "paragraph",
+                                  "content": [
+                                    {
+                                      "type": "text",
+                                      "text": "Library tab (Placeholder)"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "bulletList",
+                                  "content": [
+                                    {
+                                      "type": "listItem",
+                                      "content": [
+                                        {
+                                          "type": "paragraph",
+                                          "content": [
+                                            {
+                                              "type": "text",
+                                              "text": "Pull variables available from product (Not functional)"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "listItem",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "“Edit” right panel scrollable "
+                            }
+                          ]
+                        },
+                        {
+                          "type": "bulletList",
+                          "content": [
+                            {
+                              "type": "listItem",
+                              "content": [
+                                {
+                                  "type": "paragraph",
+                                  "content": [
+                                    {
+                                      "type": "text",
+                                      "text": "Base view when nothing is selected"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "listItem",
+                              "content": [
+                                {
+                                  "type": "paragraph",
+                                  "content": [
+                                    { "type": "text", "text": "Style tab" }
+                                  ]
+                                },
+                                {
+                                  "type": "bulletList",
+                                  "content": [
+                                    {
+                                      "type": "listItem",
+                                      "content": [
+                                        {
+                                          "type": "paragraph",
+                                          "content": [
+                                            {
+                                              "type": "text",
+                                              "text": "Size section"
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "bulletList",
+                                          "content": [
+                                            {
+                                              "type": "listItem",
+                                              "content": [
+                                                {
+                                                  "type": "paragraph",
+                                                  "content": [
+                                                    {
+                                                      "type": "text",
+                                                      "text": "Just size of individual components, not the entire canvas"
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "listItem",
+                              "content": [
+                                {
+                                  "type": "paragraph",
+                                  "content": [
+                                    {
+                                      "type": "text",
+                                      "text": "Block settings tab (Placeholder)",
+                                      "marks": [{ "type": "strike" }]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "listItem",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Save / preview buttons in top right"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "listItem",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "Top middle panel for template name"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "PATCH endpoint within template manager that saves the backing template output (e.g., HTML) to s3 and stores the blob endpoint in the table, can be used for name updates, etc within that UI"
+                    }
+                  ]
+                },
+                {
+                  "type": "bulletList",
+                  "content": [
+                    {
+                      "type": "listItem",
+                      "content": [
+                        {
+                          "type": "paragraph",
+                          "content": [
+                            {
+                              "type": "text",
+                              "text": "image section (Needs to be embedded in PDF)"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "bulletList",
+                          "content": [
+                            {
+                              "type": "listItem",
+                              "content": [
+                                {
+                                  "type": "paragraph",
+                                  "content": [
+                                    {
+                                      "type": "text",
+                                      "text": "should be saved in a way that the downstream engine can render, encoded"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "listItem",
+              "content": [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "Once template is saved, should be viewable from “My Templates” table and should load template when editor is opened"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

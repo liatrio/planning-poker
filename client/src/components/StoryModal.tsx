@@ -118,6 +118,10 @@ const getStyles = (colors: any, darkMode: boolean): { [key: string]: React.CSSPr
     padding: '24px',
     maxWidth: '700px',
     width: '100%',
+    maxHeight: '90vh',
+    overflow: 'auto',
+    display: 'flex',
+    flexDirection: 'column',
   },
   modalTitle: {
     fontSize: '24px',
@@ -140,6 +144,8 @@ const getStyles = (colors: any, darkMode: boolean): { [key: string]: React.CSSPr
     display: 'flex',
     gap: '12px',
     justifyContent: 'flex-end',
+    flexShrink: 0,
+    marginTop: 'auto',
   },
   primaryButton: {
     padding: '10px 20px',

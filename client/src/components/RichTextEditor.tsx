@@ -1,20 +1,24 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { MarkdownSerializer } from 'prosemirror-markdown';
+import { ImportContentModal } from './ImportContentModal';
 
 interface RichTextEditorProps {
   content: string;
-  onChange: (html: string) => void;
+  onChange: (json: string) => void;
   placeholder?: string;
   darkMode?: boolean;
 }
 
 export const RichTextEditor = ({ content, onChange, darkMode }: RichTextEditorProps) => {
+  const [showImportModal, setShowImportModal] = useState(false);
+
   const editor = useEditor({
     extensions: [StarterKit],
-    content,
+    content: parseContent(content),
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      onChange(JSON.stringify(editor.getJSON()));
     },
     editorProps: {
       attributes: {
@@ -24,8 +28,18 @@ export const RichTextEditor = ({ content, onChange, darkMode }: RichTextEditorPr
   });
 
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+    if (editor && content) {
+      try {
+        const currentJSON = JSON.stringify(editor.getJSON());
+        const newContent = parseContent(content);
+        const newJSON = typeof newContent === 'string' ? content : JSON.stringify(newContent);
+
+        if (currentJSON !== newJSON) {
+          editor.commands.setContent(newContent);
+        }
+      } catch (e) {
+        // If parsing fails, just skip the update
+      }
     }
   }, [content, editor]);
 
@@ -47,6 +61,24 @@ export const RichTextEditor = ({ content, onChange, darkMode }: RichTextEditorPr
     buttonBg: 'transparent',
     buttonHover: '#e9ecef',
     buttonActive: '#007bff',
+  };
+
+  const handleImport = (content: string, format: 'markdown' | 'json') => {
+    if (!editor) return;
+
+    try {
+      if (format === 'json') {
+        const json = JSON.parse(content);
+        editor.commands.setContent(json);
+      } else {
+        // For markdown, set as plain text and let TipTap handle basic formatting
+        editor.commands.setContent(content);
+      }
+      setShowImportModal(false);
+    } catch (error) {
+      console.error('Failed to import content:', error);
+      alert('Failed to import content. Please check the format and try again.');
+    }
   };
 
   if (!editor) {
@@ -199,6 +231,16 @@ export const RichTextEditor = ({ content, onChange, darkMode }: RichTextEditorPr
         >
           <span style={{ fontSize: '14px' }}>―</span>
         </MenuButton>
+
+        <div style={styles.divider} />
+
+        <MenuButton
+          onClick={() => setShowImportModal(true)}
+          isActive={false}
+          title="Import Markdown or JSON"
+        >
+          <span style={{ fontSize: '14px' }}>↓</span>
+        </MenuButton>
       </div>
       <div style={{ position: 'relative' }}>
         <EditorContent editor={editor} />
@@ -206,6 +248,8 @@ export const RichTextEditor = ({ content, onChange, darkMode }: RichTextEditorPr
           {`
             .tiptap-editor {
               min-height: 120px;
+              max-height: 400px;
+              overflow-y: auto;
               padding: 12px 16px;
               font-size: 15px;
               line-height: 1.6;
@@ -314,9 +358,31 @@ export const RichTextEditor = ({ content, onChange, darkMode }: RichTextEditorPr
           `}
         </style>
       </div>
+
+      <ImportContentModal
+        isOpen={showImportModal}
+        darkMode={darkMode || false}
+        onImport={handleImport}
+        onCancel={() => setShowImportModal(false)}
+      />
     </div>
   );
 };
+
+// Helper function to parse content (JSON or legacy HTML)
+function parseContent(content: string): any {
+  if (!content || content.trim() === '') {
+    return '';
+  }
+
+  try {
+    // Try to parse as JSON first
+    return JSON.parse(content);
+  } catch {
+    // If not JSON, treat as HTML (legacy format)
+    return content;
+  }
+}
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
