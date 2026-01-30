@@ -8,9 +8,16 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write        # push commits/tags
+  issues: write          # if you use @semantic-release/github to comment
+  pull-requests: write   # if you use @semantic-release/github on PRs
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # semantic-release commonly reads GH_TOKEN
 
 jobs:
   # Semantic versioning based on conventional commits
