@@ -3,6 +3,9 @@
 
 FROM node:20-alpine AS builder
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 # Copy package files including lockfile
@@ -28,18 +31,22 @@ RUN npm run build
 # Production stage
 FROM node:20-alpine
 
-# Install nginx
-RUN apk add --no-cache nginx
+# Install nginx and OpenSSL for Prisma
+RUN apk add --no-cache nginx openssl
 
 WORKDIR /app
 
 # Copy server package files and built code
 COPY --from=builder /app/server/package.json ./server/
 COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/server/prisma ./server/prisma
 
 # Install only production dependencies for server
 WORKDIR /app/server
 RUN npm install --production
+
+# Generate Prisma client
+RUN npx prisma generate
 
 # Copy built client files to nginx html directory
 COPY --from=builder /app/client/dist /usr/share/nginx/html

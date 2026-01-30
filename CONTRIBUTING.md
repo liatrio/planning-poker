@@ -177,7 +177,7 @@ Common scopes include:
 7. **Merge**
    - Once approved and CI passes, the PR will be merged
    - Semantic versioning will automatically determine the version bump
-   - Docker images will be built and published
+   - Docker image will be built and published
 
 ---
 
@@ -231,11 +231,9 @@ Versions are automatically determined from commit messages:
 
 ## Docker Images
 
-Docker images are automatically built and published to GitHub Container Registry on every merge to `main`:
+A Docker image is automatically built and published to GitHub Container Registry on every merge to `main`:
 
-- `ghcr.io/liatrio/planning-poker:latest` - Combined client + server
-- `ghcr.io/liatrio/planning-poker-server:latest` - Server only
-- `ghcr.io/liatrio/planning-poker-client:latest` - Client only
+- `ghcr.io/liatrio/planning-poker:latest`
 
 Images are tagged with:
 - `latest` - Most recent main build

@@ -73,9 +73,9 @@ jobs:
       - name: Build client
         run: npm run build --workspace=client
 
-  # Build and push Docker images
+  # Build and push Docker image
   docker:
-    name: Build and Push Docker Images
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
     needs: [build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -104,7 +104,7 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Extract metadata for Docker (combined image)
+      - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -117,7 +117,7 @@ jobs:
             type=semver,pattern={{major}},value=${{ steps.package_version.outputs.version }}
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: Build and push combined Docker image
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -129,71 +129,10 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
 
-      - name: Extract metadata for Server
-        id: meta_server
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
-            type=semver,pattern={{version}},value=${{ steps.package_version.outputs.version }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.package_version.outputs.version }}
-            type=semver,pattern={{major}},value=${{ steps.package_version.outputs.version }}
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Server Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.server
-          push: true
-          tags: ${{ steps.meta_server.outputs.tags }}
-          labels: ${{ steps.meta_server.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-
-      - name: Extract metadata for Client
-        id: meta_client
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
-            type=semver,pattern={{version}},value=${{ steps.package_version.outputs.version }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.package_version.outputs.version }}
-            type=semver,pattern={{major}},value=${{ steps.package_version.outputs.version }}
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Client Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.client
-          push: true
-          tags: ${{ steps.meta_client.outputs.tags }}
-          labels: ${{ steps.meta_client.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-
       - name: Generate image summary
         run: |
-          echo "## Docker Images Published 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Image Published 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Combined Image" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Server Image" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta_server.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Client Image" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta_client.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY

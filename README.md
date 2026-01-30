@@ -296,23 +296,17 @@ docker run -p 80:80 -e DATABASE_URL="..." ghcr.io/liatrio/planning-poker:latest
 
 Pre-built Docker images are available from GitHub Container Registry:
 
-**Combined (Client + Server)**
 ```bash
 docker pull ghcr.io/liatrio/planning-poker:latest
 docker pull ghcr.io/liatrio/planning-poker:1.0.0
 ```
 
-**Server Only**
-```bash
-docker pull ghcr.io/liatrio/planning-poker-server:latest
-docker pull ghcr.io/liatrio/planning-poker-server:1.0.0
-```
-
-**Client Only**
-```bash
-docker pull ghcr.io/liatrio/planning-poker-client:latest
-docker pull ghcr.io/liatrio/planning-poker-client:1.0.0
-```
+Images are tagged with:
+- `latest` - Most recent main build
+- `<version>` - Semantic version (e.g., `1.2.3`)
+- `<major>.<minor>` - Major + minor version (e.g., `1.2`)
+- `<major>` - Major version only (e.g., `1`)
+- `main-<sha>` - Git commit SHA
 
 Images are tagged with:
 - `latest` - Most recent build from main branch
