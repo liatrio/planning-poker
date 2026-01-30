@@ -34,7 +34,6 @@ export const Session = () => {
   const [showNewStory, setShowNewStory] = useState(false);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [showNamePrompt, setShowNamePrompt] = useState(!userName);
-  const [showIframeMap, setShowIframeMap] = useState<Map<string, boolean>>(new Map());
   const [notification, setNotification] = useState<string | null>(null);
   const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
   const [collapsedStories, setCollapsedStories] = useState<Set<string>>(new Set());
@@ -463,7 +462,6 @@ export const Session = () => {
                   fibonacciValues={FIBONACCI_VALUES}
                   selectedVote={selectedVotesMap.get(story.id) || null}
                   selectedModifier={selectedModifiersMap.get(story.id) || null}
-                  showIframe={showIframeMap.get(story.id) || false}
                   revealedVotes={revealedVotesMap.get(story.id) || null}
                   aiRecommendation={aiRecommendationsMap.get(story.id) || null}
                   aiLoading={aiLoadingMap.get(story.id) || false}
@@ -480,13 +478,6 @@ export const Session = () => {
                   onRevealVotes={() => revealVotes(story.id)}
                   onResetVotes={() => resetVotes(story.id)}
                   onToggleCollapse={() => toggleStoryCollapsed(story.id)}
-                  onToggleIframe={() => {
-                    setShowIframeMap(prev => {
-                      const newMap = new Map(prev);
-                      newMap.set(story.id, !prev.get(story.id));
-                      return newMap;
-                    });
-                  }}
                   onVote={(value, event) => vote(story.id, value, event)}
                   onSetModifier={(modifier) => setModifier(story.id, modifier)}
                 />
@@ -508,13 +499,14 @@ export const Session = () => {
         mode="create"
         darkMode={darkMode}
         onSubmit={(name, description, url) => {
-          if (!name.trim()) {
-            setNotification('Please enter a story name');
+          // Allow empty name if URL is provided (backend will fetch title)
+          if (!name.trim() && !url.trim()) {
+            setNotification('Please enter a story name or URL');
             return;
           }
           sendMessage({
             type: MessageType.CREATE_STORY,
-            name,
+            name: name.trim() || undefined,
             description: description || undefined,
             url: url || undefined,
           });

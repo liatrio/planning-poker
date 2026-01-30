@@ -6,6 +6,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { SessionManager } from './sessionManager';
 import { AIProviderFactory } from './ai/AIProviderFactory';
+import { JiraClient } from './jira/JiraClient';
 import {
   ClientMessage,
   MessageType,
@@ -33,6 +34,7 @@ const wss = new WebSocketServer({ server });
 const sessionManager = new SessionManager();
 const userToSession = new Map<WebSocket, { sessionId: string; userId: string }>();
 const aiProvider = AIProviderFactory.createProvider();
+const jiraClient = new JiraClient();
 
 // Load AI rules file if it exists
 let aiRules: string | undefined;
@@ -122,7 +124,37 @@ wss.on('connection', (ws: WebSocket) => {
           const sessionInfo = userToSession.get(ws);
           if (!sessionInfo) return;
 
-          const { name, description, url } = message;
+          let { name, description, url } = message;
+
+          // If URL is a Jira URL and Jira is configured, fetch title and description from Jira
+          if (url && jiraClient.isConfigured() && jiraClient.isJiraUrl(url)) {
+            console.log(`Fetching Jira ticket data for URL: ${url}`);
+            const jiraData = await jiraClient.enrichStoryFromJiraUrl(url);
+
+            if (jiraData) {
+              name = jiraData.name;
+              description = jiraData.description;
+              console.log(`Successfully fetched Jira data: "${name}"`);
+            } else {
+              // Failed to fetch Jira data - return error
+              const error: ErrorMessage = {
+                type: MessageType.ERROR,
+                message: 'Failed to fetch data from Jira URL. Please check the URL and try again.',
+              };
+              ws.send(JSON.stringify(error));
+              console.error('Failed to fetch Jira data for URL:', url);
+              return;
+            }
+          } else if (!name) {
+            // No Jira URL and no name provided - return error
+            const error: ErrorMessage = {
+              type: MessageType.ERROR,
+              message: 'Story name is required when not using a Jira URL.',
+            };
+            ws.send(JSON.stringify(error));
+            return;
+          }
+
           const story = await sessionManager.createStory(sessionInfo.sessionId, name, description, url);
 
           if (story) {

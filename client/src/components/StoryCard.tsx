@@ -29,7 +29,6 @@ interface StoryCardProps {
   fibonacciValues: string[];
   selectedVote: string | null;
   selectedModifier: string | null;
-  showIframe: boolean;
   revealedVotes: RevealedVote[] | null;
   aiRecommendation: AIRecommendation | null;
   aiLoading: boolean;
@@ -46,7 +45,6 @@ interface StoryCardProps {
   onRevealVotes: () => void;
   onResetVotes: () => void;
   onToggleCollapse?: () => void;
-  onToggleIframe: () => void;
   onVote: (value: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
   onSetModifier: (modifier: string | null) => void;
 }
@@ -56,7 +54,6 @@ export const StoryCard = ({
   fibonacciValues,
   selectedVote,
   selectedModifier,
-  showIframe,
   revealedVotes,
   aiRecommendation,
   aiLoading,
@@ -73,7 +70,6 @@ export const StoryCard = ({
   onRevealVotes,
   onResetVotes,
   onToggleCollapse,
-  onToggleIframe,
   onVote,
   onSetModifier,
 }: StoryCardProps) => {
@@ -140,22 +136,14 @@ export const StoryCard = ({
                 />
               )}
               {story.url && (
-                <div style={styles.urlContainer}>
-                  <a
-                    href={story.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={styles.urlLink}
-                  >
-                    {story.url}
-                  </a>
-                  <button
-                    onClick={onToggleIframe}
-                    style={styles.toggleButton}
-                  >
-                    {showIframe ? 'Hide Preview' : 'Show Preview'}
-                  </button>
-                </div>
+                <a
+                  href={story.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={styles.urlLink}
+                >
+                  {story.url}
+                </a>
               )}
             </div>
             <div style={styles.storyActions}>
@@ -192,17 +180,6 @@ export const StoryCard = ({
               )}
             </div>
           </div>
-
-          {story.url && showIframe && (
-            <div style={styles.iframeContainer}>
-              <iframe
-                src={story.url}
-                style={styles.iframe}
-                title="Story Preview"
-                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-              />
-            </div>
-          )}
 
           {aiLoading ? (
             <div style={styles.aiLoadingContainer}>
@@ -333,39 +310,13 @@ const getStyles = (colors: any, isFocused?: boolean, isCollapsed?: boolean): { [
     color: colors.textSecondary,
     margin: 0,
   },
-  urlContainer: {
-    marginTop: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    flexWrap: 'wrap',
-  },
   urlLink: {
     fontSize: '14px',
     color: colors.primary,
     textDecoration: 'none',
     wordBreak: 'break-all',
-  },
-  toggleButton: {
-    padding: '6px 12px',
-    fontSize: '12px',
-    backgroundColor: colors.textSecondary,
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  iframeContainer: {
-    marginTop: '16px',
-    marginBottom: '16px',
-    border: `1px solid ${colors.border}`,
-    borderRadius: '4px',
-    overflow: 'hidden',
-  },
-  iframe: {
-    width: '100%',
-    height: '500px',
-    border: 'none',
+    marginTop: '12px',
+    display: 'block',
   },
   storyActions: {
     display: 'flex',

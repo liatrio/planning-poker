@@ -64,13 +64,23 @@ export const StoryModal = ({
         <h2 style={styles.modalTitle}>
           {mode === 'create' ? 'Create New Story' : 'Edit Story'}
         </h2>
+        {mode === 'create' && (
+          <input
+            type="url"
+            placeholder="URL (optional - supported URLs will auto-populate title and description)"
+            value={storyUrl}
+            onChange={(e) => setStoryUrl(e.target.value)}
+            style={styles.input}
+            autoFocus
+          />
+        )}
         <input
           type="text"
-          placeholder="Story name"
+          placeholder={mode === 'create' ? 'Story name (optional if URL provided above)' : 'Story name'}
           value={storyName}
           onChange={(e) => setStoryName(e.target.value)}
           style={styles.input}
-          autoFocus
+          autoFocus={mode === 'edit'}
         />
         <RichTextEditor
           content={storyDescription}
@@ -78,13 +88,15 @@ export const StoryModal = ({
           placeholder="Description (optional)"
           darkMode={darkMode}
         />
-        <input
-          type="url"
-          placeholder="URL (optional)"
-          value={storyUrl}
-          onChange={(e) => setStoryUrl(e.target.value)}
-          style={styles.input}
-        />
+        {mode === 'edit' && (
+          <input
+            type="url"
+            placeholder="URL (optional)"
+            value={storyUrl}
+            onChange={(e) => setStoryUrl(e.target.value)}
+            style={styles.input}
+          />
+        )}
         <div style={styles.modalActions}>
           <button onClick={onCancel} style={styles.secondaryButton}>
             Cancel

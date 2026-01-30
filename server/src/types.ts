@@ -60,7 +60,7 @@ export interface JoinMessage {
 
 export interface CreateStoryMessage {
   type: MessageType.CREATE_STORY;
-  name: string;
+  name?: string;
   description?: string;
   url?: string;
 }
