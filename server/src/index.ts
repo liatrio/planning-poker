@@ -22,6 +22,7 @@ import {
   VotesResetMessage,
   StoryFocusedMessage,
   StoryUnfocusedMessage,
+  RoleChangedMessage,
   AIAnalysisStartedMessage,
   AIRecommendationMessage,
   PastStoriesLoadedMessage,
@@ -509,6 +510,36 @@ wss.on('connection', (ws: WebSocket) => {
             };
             await sessionManager.broadcast(sessionInfo.sessionId, storyUnfocused);
             console.log(`All stories unfocused in session ${sessionInfo.sessionId}`);
+          }
+          break;
+        }
+
+        case MessageType.CHANGE_ROLE: {
+          const sessionInfo = userToSession.get(ws);
+          if (!sessionInfo) return;
+
+          const { role } = message;
+
+          // Validate role
+          if (role !== 'participant' && role !== 'observer') {
+            const error: ErrorMessage = {
+              type: MessageType.ERROR,
+              message: 'Invalid role. Must be "participant" or "observer"',
+            };
+            ws.send(JSON.stringify(error));
+            break;
+          }
+
+          const success = await sessionManager.changeUserRole(sessionInfo.userId, role);
+
+          if (success) {
+            const roleChanged: RoleChangedMessage = {
+              type: MessageType.ROLE_CHANGED,
+              userId: sessionInfo.userId,
+              role,
+            };
+            await sessionManager.broadcast(sessionInfo.sessionId, roleChanged);
+            console.log(`User ${sessionInfo.userId} changed role to ${role} in session ${sessionInfo.sessionId}`);
           }
           break;
         }

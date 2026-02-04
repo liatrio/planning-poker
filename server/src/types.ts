@@ -49,6 +49,8 @@ export enum MessageType {
   STORY_FOCUSED = 'story_focused',
   UNFOCUS_STORY = 'unfocus_story',
   STORY_UNFOCUSED = 'story_unfocused',
+  CHANGE_ROLE = 'change_role',
+  ROLE_CHANGED = 'role_changed',
   AI_ANALYSIS_STARTED = 'ai_analysis_started',
   AI_RECOMMENDATION = 'ai_recommendation',
   LOAD_MORE_STORIES = 'load_more_stories',
@@ -110,6 +112,11 @@ export interface UnfocusStoryMessage {
   type: MessageType.UNFOCUS_STORY;
 }
 
+export interface ChangeRoleMessage {
+  type: MessageType.CHANGE_ROLE;
+  role: string;
+}
+
 export interface DeleteStoryMessage {
   type: MessageType.DELETE_STORY;
   storyId: string;
@@ -132,6 +139,7 @@ export type ClientMessage =
   | ResetVotesMessage
   | SetFocusedStoryMessage
   | UnfocusStoryMessage
+  | ChangeRoleMessage
   | LoadMoreStoriesMessage;
 
 export interface UserJoinedMessage {
@@ -194,6 +202,12 @@ export interface StoryFocusedMessage {
 
 export interface StoryUnfocusedMessage {
   type: MessageType.STORY_UNFOCUSED;
+}
+
+export interface RoleChangedMessage {
+  type: MessageType.ROLE_CHANGED;
+  userId: string;
+  role: string;
 }
 
 export interface StoryDeletedMessage {
@@ -264,6 +278,7 @@ export type ServerMessage =
   | VotesResetMessage
   | StoryFocusedMessage
   | StoryUnfocusedMessage
+  | RoleChangedMessage
   | AIAnalysisStartedMessage
   | AIRecommendationMessage
   | PastStoriesLoadedMessage

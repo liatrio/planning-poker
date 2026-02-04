@@ -747,6 +747,19 @@ export class SessionManager {
     }
   }
 
+  async changeUserRole(userId: string, role: string): Promise<boolean> {
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { role },
+      });
+      return true;
+    } catch (error) {
+      console.error('Error changing user role:', error);
+      return false;
+    }
+  }
+
   async getUserName(sessionId: string, userId: string): Promise<string | null> {
     try {
       const user = await this.prisma.user.findUnique({

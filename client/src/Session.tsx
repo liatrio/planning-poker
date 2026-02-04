@@ -407,6 +407,18 @@ export const Session = () => {
     localStorage.setItem(STORAGE_KEY_DARK_MODE, String(newMode));
   };
 
+  const toggleRole = () => {
+    const currentUser = users.find(u => u.id === currentUserId);
+    if (!currentUser) return;
+
+    const newRole = currentUser.role === 'observer' ? 'participant' : 'observer';
+    sendMessage({
+      type: MessageType.CHANGE_ROLE,
+      role: newRole,
+    });
+    setNotification(`Switched to ${newRole} role`);
+  };
+
   const colors = darkMode ? {
     background: '#1a1a1a',
     surface: '#2d2d2d',
@@ -464,6 +476,9 @@ export const Session = () => {
         <div style={styles.headerButtons}>
           <button onClick={toggleDarkMode} style={styles.darkModeButton}>
             {darkMode ? '☀️' : '🌙'}
+          </button>
+          <button onClick={toggleRole} style={styles.roleButton}>
+            {users.find(u => u.id === currentUserId)?.role === 'observer' ? '👤 Join as Participant' : '👁️ Switch to Observer'}
           </button>
           <button onClick={copySessionId} style={styles.copyButton}>
             Copy Session ID
@@ -624,6 +639,15 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
   darkModeButton: {
     padding: '8px 16px',
     fontSize: '18px',
+    backgroundColor: colors.surface,
+    color: colors.text,
+    border: `2px solid ${colors.border}`,
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  roleButton: {
+    padding: '8px 16px',
+    fontSize: '14px',
     backgroundColor: colors.surface,
     color: colors.text,
     border: `2px solid ${colors.border}`,

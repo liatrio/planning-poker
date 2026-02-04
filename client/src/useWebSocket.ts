@@ -255,6 +255,19 @@ export const useWebSocket = (
             })));
             break;
 
+          case MessageType.ROLE_CHANGED:
+            setUsers((prev) => prev.map(user =>
+              user.id === message.userId
+                ? { ...user, role: message.role }
+                : user
+            ));
+            // Update localStorage if it's the current user
+            const roleChangedUser = users.find(u => u.name === userName);
+            if (roleChangedUser?.id === message.userId) {
+              localStorage.setItem('planning_poker_user_role', message.role);
+            }
+            break;
+
           case MessageType.AI_ANALYSIS_STARTED:
             setAiLoadingMap((prev) => {
               const newMap = new Map(prev);
