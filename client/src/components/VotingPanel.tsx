@@ -68,6 +68,19 @@ export const VotingPanel = ({
             </button>
           );
         })}
+        <button
+          className="vote-card"
+          onClick={(e) => onVote('abstain', e)}
+          disabled={isRevealed}
+          style={{
+            ...styles.card,
+            ...styles.abstainCard,
+            ...(selectedVote === 'abstain' ? styles.abstainCardSelected : styles.abstainCardUnselected),
+            ...(isRevealed ? styles.cardDisabled : {}),
+          }}
+        >
+          Abstain
+        </button>
       </div>
 
       {!isRevealed && (
@@ -151,6 +164,22 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
     opacity: 0.5,
     cursor: 'not-allowed',
     outline: 'none',
+  },
+  abstainCard: {
+    fontSize: '16px',
+    gridColumn: 'span 2',
+  },
+  abstainCardUnselected: {
+    backgroundColor: colors.surface,
+    color: colors.text,
+    border: `2px dashed ${colors.border}`,
+    transform: 'scale(1)',
+  },
+  abstainCardSelected: {
+    backgroundColor: '#808080',
+    color: 'white',
+    border: '2px dashed #808080',
+    transform: 'scale(1.05)',
   },
   modifiersSection: {
     marginTop: '24px',

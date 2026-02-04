@@ -23,6 +23,10 @@ interface UseWebSocketReturn {
   revealedVotesMap: Map<string, Array<{ userId: string; userName: string; value: string | null }>>;
   aiRecommendationsMap: Map<string, AIRecommendation>;
   aiLoadingMap: Map<string, boolean>;
+  hasMorePastStories: boolean;
+  totalPastStoriesCount: number;
+  loadingMoreStories: boolean;
+  loadMorePastStories: () => void;
   error: string | null;
 }
 
@@ -37,6 +41,9 @@ export const useWebSocket = (
   const [revealedVotesMap, setRevealedVotesMap] = useState<Map<string, Array<{ userId: string; userName: string; value: string | null }>>>(new Map());
   const [aiRecommendationsMap, setAiRecommendationsMap] = useState<Map<string, AIRecommendation>>(new Map());
   const [aiLoadingMap, setAiLoadingMap] = useState<Map<string, boolean>>(new Map());
+  const [hasMorePastStories, setHasMorePastStories] = useState(false);
+  const [totalPastStoriesCount, setTotalPastStoriesCount] = useState(0);
+  const [loadingMoreStories, setLoadingMoreStories] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ws = useRef<WebSocket | null>(null);
 
@@ -55,10 +62,12 @@ export const useWebSocket = (
       setConnected(true);
       setError(null);
 
+      const role = localStorage.getItem('planning_poker_user_role') || 'participant';
       const joinMessage: ClientMessage = {
         type: MessageType.JOIN,
         sessionId,
         userName,
+        role,
       };
       ws.current?.send(JSON.stringify(joinMessage));
 
@@ -136,6 +145,26 @@ export const useWebSocket = (
             setAiRecommendationsMap((prev) => {
               const newMap = new Map(prev);
               newMap.delete(message.story.id);
+              return newMap;
+            });
+            break;
+
+          case MessageType.STORY_DELETED:
+            setStories((prev) => prev.filter((s) => s.id !== message.storyId));
+            // Clean up maps
+            setRevealedVotesMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(message.storyId);
+              return newMap;
+            });
+            setAiRecommendationsMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(message.storyId);
+              return newMap;
+            });
+            setAiLoadingMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(message.storyId);
               return newMap;
             });
             break;
@@ -253,6 +282,21 @@ export const useWebSocket = (
             console.log('AI recommendation received for story:', message.storyId);
             break;
 
+          case MessageType.PAST_STORIES_LOADED:
+            setStories((prev) => {
+              const merged = [...prev];
+              message.stories.forEach((newStory) => {
+                if (!merged.find((s) => s.id === newStory.id)) {
+                  merged.push(newStory);
+                }
+              });
+              return merged;
+            });
+            setHasMorePastStories(message.hasMore);
+            setTotalPastStoriesCount(message.totalCount);
+            setLoadingMoreStories(false);
+            break;
+
           case MessageType.ERROR:
             console.error('Server error:', message.message);
             setError(message.message);
@@ -292,6 +336,19 @@ export const useWebSocket = (
     }
   }, []);
 
+  const loadMorePastStories = useCallback(() => {
+    if (!ws.current || loadingMoreStories) return;
+    setLoadingMoreStories(true);
+
+    const currentPastCount = stories.filter((s) => s.revealed && !s.isFocused).length;
+    const loadMoreMessage: ClientMessage = {
+      type: MessageType.LOAD_MORE_STORIES,
+      offset: currentPastCount,
+      limit: 25,
+    };
+    sendMessage(loadMoreMessage);
+  }, [loadingMoreStories, stories, sendMessage]);
+
   return {
     connected,
     users,
@@ -301,6 +358,10 @@ export const useWebSocket = (
     revealedVotesMap,
     aiRecommendationsMap,
     aiLoadingMap,
+    hasMorePastStories,
+    totalPastStoriesCount,
+    loadingMoreStories,
+    loadMorePastStories,
     error,
   };
 };

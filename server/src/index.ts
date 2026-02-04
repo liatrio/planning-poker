@@ -15,6 +15,8 @@ import {
   UserLeftMessage,
   StoryCreatedMessage,
   StoryUpdatedMessage,
+  StoryDeletedMessage,
+  RefreshStoryMessage,
   VoteUpdateMessage,
   VotesRevealedMessage,
   VotesResetMessage,
@@ -22,6 +24,7 @@ import {
   StoryUnfocusedMessage,
   AIAnalysisStartedMessage,
   AIRecommendationMessage,
+  PastStoriesLoadedMessage,
 } from './types';
 
 const app = express();
@@ -81,7 +84,7 @@ wss.on('connection', (ws: WebSocket) => {
 
       switch (message.type) {
         case MessageType.JOIN: {
-          const { sessionId, userName } = message;
+          const { sessionId, userName, role } = message;
 
           const session = await sessionManager.getSession(sessionId);
           if (!session) {
@@ -93,7 +96,7 @@ wss.on('connection', (ws: WebSocket) => {
             return;
           }
 
-          const user = await sessionManager.addUser(sessionId, userName, ws);
+          const user = await sessionManager.addUser(sessionId, userName, ws, role || 'participant');
           if (!user) {
             const error: ErrorMessage = {
               type: MessageType.ERROR,
@@ -110,13 +113,14 @@ wss.on('connection', (ws: WebSocket) => {
             ws.send(JSON.stringify(sessionState));
           }
 
+          const dbUser = await sessionManager.getUser(user.id);
           const userJoined: UserJoinedMessage = {
             type: MessageType.USER_JOINED,
-            user: { id: user.id, name: user.name },
+            user: { id: user.id, name: user.name, role: dbUser?.role },
           };
           await sessionManager.broadcast(sessionId, userJoined, user.id);
 
-          console.log(`User ${userName} joined session ${sessionId}`);
+          console.log(`User ${userName} joined session ${sessionId} as ${role || 'participant'}`);
           break;
         }
 
@@ -199,9 +203,80 @@ wss.on('connection', (ws: WebSocket) => {
           break;
         }
 
+        case MessageType.REFRESH_STORY: {
+          const sessionInfo = userToSession.get(ws);
+          if (!sessionInfo) return;
+
+          const { storyId } = message;
+
+          // Get the existing story
+          const existingStory = await sessionManager.getStory(sessionInfo.sessionId, storyId);
+
+          if (!existingStory || !existingStory.url) {
+            const error: ErrorMessage = {
+              type: MessageType.ERROR,
+              message: 'Story must have a URL to refresh',
+            };
+            ws.send(JSON.stringify(error));
+            break;
+          }
+
+          // Fetch updated data from Jira if URL is a Jira URL
+          let name = existingStory.name;
+          let description = existingStory.description;
+          const url = existingStory.url;
+
+          if (jiraClient.isConfigured() && jiraClient.isJiraUrl(url)) {
+            console.log(`Refreshing Jira ticket data for URL: ${url}`);
+            const jiraData = await jiraClient.enrichStoryFromJiraUrl(url);
+
+            if (jiraData) {
+              name = jiraData.name;
+              description = jiraData.description;
+              console.log(`Successfully refreshed Jira data: "${name}"`);
+            }
+          }
+
+          // Update the story
+          const story = await sessionManager.editStory(
+            sessionInfo.sessionId,
+            storyId,
+            name,
+            description,
+            url
+          );
+
+          if (story) {
+            const storyUpdated: StoryUpdatedMessage = {
+              type: MessageType.STORY_UPDATED,
+              story: {
+                id: story.id,
+                name: story.name,
+                description: story.description,
+                url: story.url,
+                revealed: story.revealed,
+              },
+            };
+            await sessionManager.broadcast(sessionInfo.sessionId, storyUpdated);
+            console.log(`Story ${storyId} refreshed in session ${sessionInfo.sessionId}`);
+          }
+          break;
+        }
+
         case MessageType.VOTE: {
           const sessionInfo = userToSession.get(ws);
           if (!sessionInfo) return;
+
+          // Check if user is an observer
+          const user = await sessionManager.getUser(sessionInfo.userId);
+          if (user?.role === 'observer') {
+            const error: ErrorMessage = {
+              type: MessageType.ERROR,
+              message: 'Observers cannot vote',
+            };
+            ws.send(JSON.stringify(error));
+            break;
+          }
 
           const { storyId, value, modifier } = message;
           const success = await sessionManager.vote(sessionInfo.sessionId, storyId, sessionInfo.userId, value, modifier);
@@ -231,6 +306,18 @@ wss.on('connection', (ws: WebSocket) => {
           const storyData = await sessionManager.getStoryWithVotes(sessionInfo.sessionId, storyId);
 
           if (storyData) {
+            // Get all users to check their roles
+            const session = await sessionManager.getSession(sessionInfo.sessionId);
+            const userRoles = new Map<string, string>();
+            if (session) {
+              for (const userId of session.users.keys()) {
+                const user = await sessionManager.getUser(userId);
+                if (user) {
+                  userRoles.set(userId, user.role);
+                }
+              }
+            }
+
             // Get raw votes with their modifiers
             const rawVotes = Array.from(storyData.story.votes.entries()).map(([userId, value]) => ({
               userId,
@@ -239,8 +326,11 @@ wss.on('connection', (ws: WebSocket) => {
               modifier: storyData.voteModifiers.get(userId) || null,
             }));
 
-            // Calculate consensus value (mode - most common vote) from numeric votes
-            const numericVotes = rawVotes
+            // Filter out observer votes for consensus calculation
+            const participantVotes = rawVotes.filter(vote => userRoles.get(vote.userId) !== 'observer');
+
+            // Calculate consensus value (mode - most common vote) from numeric participant votes only
+            const numericVotes = participantVotes
               .map(v => v.value ? parseFloat(v.value) : null)
               .filter((v): v is number => v !== null && !isNaN(v));
 
@@ -420,6 +510,51 @@ wss.on('connection', (ws: WebSocket) => {
             await sessionManager.broadcast(sessionInfo.sessionId, storyUnfocused);
             console.log(`All stories unfocused in session ${sessionInfo.sessionId}`);
           }
+          break;
+        }
+
+        case MessageType.DELETE_STORY: {
+          const sessionInfo = userToSession.get(ws);
+          if (!sessionInfo) return;
+
+          const { storyId } = message;
+          const success = await sessionManager.deleteStory(sessionInfo.sessionId, storyId);
+
+          if (success) {
+            const storyDeleted: StoryDeletedMessage = {
+              type: MessageType.STORY_DELETED,
+              storyId,
+            };
+            await sessionManager.broadcast(sessionInfo.sessionId, storyDeleted);
+            console.log(`Story ${storyId} deleted in session ${sessionInfo.sessionId}`);
+          } else {
+            const error: ErrorMessage = {
+              type: MessageType.ERROR,
+              message: 'Cannot delete revealed story',
+            };
+            ws.send(JSON.stringify(error));
+          }
+          break;
+        }
+
+        case MessageType.LOAD_MORE_STORIES: {
+          const sessionInfo = userToSession.get(ws);
+          if (!sessionInfo) return;
+
+          const { offset = 0, limit = 25 } = message;
+          const result = await sessionManager.loadMorePastStories(
+            sessionInfo.sessionId,
+            offset,
+            limit
+          );
+
+          const response: PastStoriesLoadedMessage = {
+            type: MessageType.PAST_STORIES_LOADED,
+            stories: result.stories,
+            hasMore: result.hasMore,
+            totalCount: result.totalCount,
+          };
+          ws.send(JSON.stringify(response));
           break;
         }
       }

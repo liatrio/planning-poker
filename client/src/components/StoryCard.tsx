@@ -40,6 +40,8 @@ interface StoryCardProps {
   isCollapsed?: boolean;
   currentUserId: string | null;
   onEditStory: () => void;
+  onRefreshStory?: () => void;
+  onDeleteStory?: () => void;
   onFocusStory?: () => void;
   onUnfocusStory?: () => void;
   onRevealVotes: () => void;
@@ -65,6 +67,8 @@ export const StoryCard = ({
   isCollapsed,
   currentUserId,
   onEditStory,
+  onRefreshStory,
+  onDeleteStory,
   onFocusStory,
   onUnfocusStory,
   onRevealVotes,
@@ -154,6 +158,16 @@ export const StoryCard = ({
               >
                 Edit Story
               </button>
+              {!story.revealed && story.url && onRefreshStory && (
+                <button onClick={onRefreshStory} style={styles.secondaryButton}>
+                  🔄 Refresh
+                </button>
+              )}
+              {!story.revealed && onDeleteStory && (
+                <button onClick={onDeleteStory} style={styles.dangerButton}>
+                  Delete
+                </button>
+              )}
               {!isFocused && !story.revealed && onFocusStory && (
                 <button onClick={onFocusStory} style={styles.secondaryButton}>
                   Focus
@@ -167,8 +181,9 @@ export const StoryCard = ({
               {!story.revealed && (
                 <button
                   onClick={onRevealVotes}
-                  disabled={voteCount === 0}
+                  disabled={voteCount === 0 || !isFocused}
                   style={styles.primaryButton}
+                  title={!isFocused ? 'Focus this story to reveal votes' : ''}
                 >
                   Reveal ({voteCount}/{totalUsers})
                 </button>
@@ -352,6 +367,16 @@ const getStyles = (colors: any, isFocused?: boolean, isCollapsed?: boolean): { [
     borderRadius: '4px',
     cursor: 'not-allowed',
     opacity: 0.5,
+  },
+  dangerButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: '600',
+    backgroundColor: '#dc3545',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
   },
   aiLoadingContainer: {
     marginTop: '20px',

@@ -6,6 +6,9 @@ export enum MessageType {
   STORY_CREATED = 'story_created',
   EDIT_STORY = 'edit_story',
   STORY_UPDATED = 'story_updated',
+  REFRESH_STORY = 'refresh_story',
+  DELETE_STORY = 'delete_story',
+  STORY_DELETED = 'story_deleted',
   VOTE = 'vote',
   VOTE_UPDATE = 'vote_update',
   REVEAL_VOTES = 'reveal_votes',
@@ -18,6 +21,8 @@ export enum MessageType {
   STORY_UNFOCUSED = 'story_unfocused',
   AI_ANALYSIS_STARTED = 'ai_analysis_started',
   AI_RECOMMENDATION = 'ai_recommendation',
+  LOAD_MORE_STORIES = 'load_more_stories',
+  PAST_STORIES_LOADED = 'past_stories_loaded',
   SESSION_STATE = 'session_state',
   ERROR = 'error'
 }
@@ -25,6 +30,7 @@ export enum MessageType {
 export interface User {
   id: string;
   name: string;
+  role?: string;
 }
 
 export interface Story {
@@ -48,6 +54,7 @@ export interface JoinMessage {
   type: MessageType.JOIN;
   sessionId: string;
   userName: string;
+  role?: string;
 }
 
 export interface CreateStoryMessage {
@@ -63,6 +70,16 @@ export interface EditStoryMessage {
   name: string;
   description?: string;
   url?: string;
+}
+
+export interface RefreshStoryMessage {
+  type: MessageType.REFRESH_STORY;
+  storyId: string;
+}
+
+export interface DeleteStoryMessage {
+  type: MessageType.DELETE_STORY;
+  storyId: string;
 }
 
 export interface VoteMessage {
@@ -91,15 +108,24 @@ export interface UnfocusStoryMessage {
   type: MessageType.UNFOCUS_STORY;
 }
 
+export interface LoadMoreStoriesMessage {
+  type: MessageType.LOAD_MORE_STORIES;
+  offset: number;
+  limit?: number;
+}
+
 export type ClientMessage =
   | JoinMessage
   | CreateStoryMessage
   | EditStoryMessage
+  | RefreshStoryMessage
+  | DeleteStoryMessage
   | VoteMessage
   | RevealVotesMessage
   | ResetVotesMessage
   | SetFocusedStoryMessage
-  | UnfocusStoryMessage;
+  | UnfocusStoryMessage
+  | LoadMoreStoriesMessage;
 
 export interface UserJoinedMessage {
   type: MessageType.USER_JOINED;
@@ -119,6 +145,11 @@ export interface StoryCreatedMessage {
 export interface StoryUpdatedMessage {
   type: MessageType.STORY_UPDATED;
   story: Story;
+}
+
+export interface StoryDeletedMessage {
+  type: MessageType.STORY_DELETED;
+  storyId: string;
 }
 
 export interface VoteUpdateMessage {
@@ -163,6 +194,13 @@ export interface AIRecommendationMessage {
   suggestedStories?: string[];
 }
 
+export interface PastStoriesLoadedMessage {
+  type: MessageType.PAST_STORIES_LOADED;
+  stories: Story[];
+  hasMore: boolean;
+  totalCount: number;
+}
+
 export interface SessionStateMessage {
   type: MessageType.SESSION_STATE;
   users: User[];
@@ -192,6 +230,7 @@ export type ServerMessage =
   | UserLeftMessage
   | StoryCreatedMessage
   | StoryUpdatedMessage
+  | StoryDeletedMessage
   | VoteUpdateMessage
   | VotesRevealedMessage
   | VotesResetMessage
@@ -199,5 +238,6 @@ export type ServerMessage =
   | StoryUnfocusedMessage
   | AIAnalysisStartedMessage
   | AIRecommendationMessage
+  | PastStoriesLoadedMessage
   | SessionStateMessage
   | ErrorMessage;

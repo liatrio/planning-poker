@@ -40,12 +40,20 @@ export const VoteResults = ({
         <div style={styles.average}>Average: {average}</div>
       )}
       <div style={styles.votesGrid}>
-        {revealedVotes.map((vote) => (
-          <div key={vote.userId} style={styles.voteResult}>
-            <div style={styles.voteName}>{vote.userName}</div>
-            <div style={styles.voteValue}>{vote.value ?? '-'}</div>
-          </div>
-        ))}
+        {revealedVotes.map((vote) => {
+          const isAbstain = vote.value === 'abstain';
+          return (
+            <div key={vote.userId} style={styles.voteResult}>
+              <div style={styles.voteName}>{vote.userName}</div>
+              <div style={{
+                ...styles.voteValue,
+                ...(isAbstain ? styles.abstainValue : {}),
+              }}>
+                {isAbstain ? 'Abstain' : (vote.value ?? '-')}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -90,5 +98,10 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
     fontSize: '24px',
     fontWeight: 'bold',
     color: colors.text,
+  },
+  abstainValue: {
+    fontSize: '14px',
+    color: colors.textSecondary,
+    fontStyle: 'italic',
   },
 });

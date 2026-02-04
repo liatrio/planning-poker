@@ -15,6 +15,7 @@ const STORAGE_KEY_SESSION = 'planning_poker_last_session';
 const STORAGE_KEY_DARK_MODE = 'planning_poker_dark_mode';
 const STORAGE_KEY_VOTES_PREFIX = 'planning_poker_votes_';
 const STORAGE_KEY_MODIFIERS_PREFIX = 'planning_poker_modifiers_';
+const STORAGE_KEY_USER_ROLE = 'planning_poker_user_role';
 
 export const Session = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -38,7 +39,7 @@ export const Session = () => {
   const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
   const [collapsedStories, setCollapsedStories] = useState<Set<string>>(new Set());
 
-  const { connected, users, stories, currentUserId, sendMessage, revealedVotesMap, aiRecommendationsMap, aiLoadingMap, error } = useWebSocket(
+  const { connected, users, stories, currentUserId, sendMessage, revealedVotesMap, aiRecommendationsMap, aiLoadingMap, hasMorePastStories, totalPastStoriesCount, loadingMoreStories, loadMorePastStories, error } = useWebSocket(
     sessionId || null,
     userName
   );
@@ -167,13 +168,14 @@ export const Session = () => {
     }
   };
 
-  const joinWithName = (name: string) => {
+  const joinWithName = (name: string, role: string = 'participant') => {
     if (!name.trim()) {
       setNotification('Please enter your name');
       return;
     }
 
     localStorage.setItem(STORAGE_KEY_USERNAME, name);
+    localStorage.setItem(STORAGE_KEY_USER_ROLE, role);
     setUserName(name);
     setShowNamePrompt(false);
   };
@@ -281,6 +283,50 @@ export const Session = () => {
     });
   };
 
+  const deleteStory = (storyId: string) => {
+    const story = stories.find(s => s.id === storyId);
+    if (story?.revealed) {
+      setNotification('Cannot delete revealed story');
+      return;
+    }
+
+    if (window.confirm('Are you sure you want to delete this story?')) {
+      sendMessage({
+        type: MessageType.DELETE_STORY,
+        storyId,
+      });
+
+      // Clean up localStorage
+      setSelectedVotesMap(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(storyId);
+        saveVotesToStorage(newMap);
+        return newMap;
+      });
+
+      setSelectedModifiersMap(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(storyId);
+        saveModifiersToStorage(newMap);
+        return newMap;
+      });
+    }
+  };
+
+  const refreshStory = (storyId: string) => {
+    const story = stories.find(s => s.id === storyId);
+    if (!story?.url) {
+      setNotification('Story must have a URL to refresh');
+      return;
+    }
+
+    sendMessage({
+      type: MessageType.REFRESH_STORY,
+      storyId,
+    });
+    setNotification('Refreshing story from Jira...');
+  };
+
   const copySessionLink = () => {
     const link = window.location.href.split('?')[0];
     navigator.clipboard.writeText(link);
@@ -296,6 +342,10 @@ export const Session = () => {
 
   const getVoteCount = (story: typeof stories[0]) => {
     return story.votes.filter(v => v.hasVoted).length;
+  };
+
+  const getParticipantCount = () => {
+    return users.filter(u => u.role !== 'observer').length;
   };
 
   const calculateAverage = (storyId: string) => {
@@ -452,12 +502,14 @@ export const Session = () => {
                   aiLoading={aiLoadingMap.get(story.id) || false}
                   average={calculateAverage(story.id)}
                   voteCount={getVoteCount(story)}
-                  totalUsers={users.length}
+                  totalUsers={getParticipantCount()}
                   darkMode={darkMode}
                   isFocused={story.isFocused}
                   isCollapsed={collapsedStories.has(story.id)}
                   currentUserId={currentUserId}
                   onEditStory={() => setEditingStoryId(story.id)}
+                  onRefreshStory={() => refreshStory(story.id)}
+                  onDeleteStory={() => deleteStory(story.id)}
                   onFocusStory={() => setFocusedStory(story.id)}
                   onUnfocusStory={unfocusStory}
                   onRevealVotes={() => revealVotes(story.id)}
@@ -475,6 +527,10 @@ export const Session = () => {
             expandedStories={expandedStories}
             onToggleExpanded={toggleStoryExpanded}
             darkMode={darkMode}
+            hasMore={hasMorePastStories}
+            onLoadMore={loadMorePastStories}
+            loading={loadingMoreStories}
+            totalCount={totalPastStoriesCount}
           />
         </div>
       </div>

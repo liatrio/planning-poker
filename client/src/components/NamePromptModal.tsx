@@ -4,7 +4,7 @@ interface NamePromptModalProps {
   isOpen: boolean;
   initialName?: string;
   darkMode: boolean;
-  onSubmit: (name: string) => void;
+  onSubmit: (name: string, role: string) => void;
 }
 
 export const NamePromptModal = ({
@@ -14,9 +14,10 @@ export const NamePromptModal = ({
   onSubmit,
 }: NamePromptModalProps) => {
   const [nameInput, setNameInput] = useState(initialName);
+  const [role, setRole] = useState<string>('participant');
 
   const handleSubmit = () => {
-    onSubmit(nameInput);
+    onSubmit(nameInput, role);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -60,6 +61,31 @@ export const NamePromptModal = ({
             style={styles.input}
             autoFocus
           />
+          <div style={styles.roleSelection}>
+            <label style={styles.roleLabel}>Join as:</label>
+            <div style={styles.roleOptions}>
+              <label style={styles.radioLabel}>
+                <input
+                  type="radio"
+                  value="participant"
+                  checked={role === 'participant'}
+                  onChange={(e) => setRole(e.target.value)}
+                  style={styles.radio}
+                />
+                <span style={styles.roleText}>Participant (can vote)</span>
+              </label>
+              <label style={styles.radioLabel}>
+                <input
+                  type="radio"
+                  value="observer"
+                  checked={role === 'observer'}
+                  onChange={(e) => setRole(e.target.value)}
+                  style={styles.radio}
+                />
+                <span style={styles.roleText}>Observer (watch only)</span>
+              </label>
+            </div>
+          </div>
           <div style={styles.modalActions}>
             <button onClick={handleSubmit} style={styles.primaryButton}>
               Join Session
@@ -120,6 +146,34 @@ const getStyles = (colors: any, darkMode: boolean): { [key: string]: React.CSSPr
     marginBottom: '16px',
     boxSizing: 'border-box',
     backgroundColor: colors.surface,
+    color: colors.text,
+  },
+  roleSelection: {
+    marginBottom: '20px',
+  },
+  roleLabel: {
+    display: 'block',
+    fontSize: '14px',
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: '8px',
+  },
+  roleOptions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  radioLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+  },
+  radio: {
+    marginRight: '8px',
+    cursor: 'pointer',
+  },
+  roleText: {
+    fontSize: '14px',
     color: colors.text,
   },
   modalActions: {

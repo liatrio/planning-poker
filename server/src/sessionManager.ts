@@ -84,7 +84,7 @@ export class SessionManager {
     };
   }
 
-  async addUser(sessionId: string, userName: string, ws: WebSocket): Promise<User | null> {
+  async addUser(sessionId: string, userName: string, ws: WebSocket, role: string = 'participant'): Promise<User | null> {
     // Check if session exists
     const session = await this.prisma.session.findUnique({
       where: { id: sessionId },
@@ -105,10 +105,10 @@ export class SessionManager {
 
       if (dbUser) {
         // User exists - this is a reconnection
-        // Reactivate the user
+        // Reactivate the user and update role
         dbUser = await this.prisma.user.update({
           where: { id: dbUser.id },
-          data: { active: true },
+          data: { active: true, role },
         });
       } else {
         // New user - create in database
@@ -117,6 +117,7 @@ export class SessionManager {
             name: userName,
             sessionId,
             active: true,
+            role,
           },
         });
       }
@@ -299,6 +300,12 @@ export class SessionManager {
 
       if (!story) return false;
 
+      // Check if story is focused
+      if (!story.isFocused) {
+        console.error('Cannot reveal votes on unfocused story');
+        return false;
+      }
+
       // Update story to revealed
       await this.prisma.story.update({
         where: { id: storyId },
@@ -308,6 +315,40 @@ export class SessionManager {
       return true;
     } catch (error) {
       console.error('Error revealing votes:', error);
+      return false;
+    }
+  }
+
+  async deleteStory(sessionId: string, storyId: string): Promise<boolean> {
+    try {
+      // Verify story exists and belongs to session
+      const story = await this.prisma.story.findFirst({
+        where: {
+          id: storyId,
+          sessionId,
+        },
+      });
+
+      if (!story) {
+        console.error('Story not found');
+        return false;
+      }
+
+      // Don't allow deleting revealed stories
+      if (story.revealed) {
+        console.error('Cannot delete revealed story');
+        return false;
+      }
+
+      // Delete the story (cascade delete handles votes and AI recommendations)
+      await this.prisma.story.delete({
+        where: { id: storyId },
+      });
+
+      console.log(`Story ${storyId} deleted from session ${sessionId}`);
+      return true;
+    } catch (error) {
+      console.error('Error deleting story:', error);
       return false;
     }
   }
@@ -402,6 +443,29 @@ export class SessionManager {
     } catch (error) {
       console.error('Error unfocusing stories:', error);
       return false;
+    }
+  }
+
+  async getStory(sessionId: string, storyId: string): Promise<{ id: string; name: string; description?: string; url?: string } | null> {
+    try {
+      const story = await this.prisma.story.findFirst({
+        where: {
+          id: storyId,
+          sessionId,
+        },
+      });
+
+      if (!story) return null;
+
+      return {
+        id: story.id,
+        name: story.name,
+        description: story.description ?? undefined,
+        url: story.url ?? undefined,
+      };
+    } catch (error) {
+      console.error('Error getting story:', error);
+      return null;
     }
   }
 
@@ -515,12 +579,33 @@ export class SessionManager {
 
       if (!session) return null;
 
+      // Also fetch last 25 past stories (revealed and not focused)
+      const pastStories = await this.prisma.story.findMany({
+        where: {
+          sessionId,
+          revealed: true,
+          isFocused: false,
+        },
+        include: {
+          votes: true,
+          aiRecommendation: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 25,
+      });
+
+      // Merge session stories with past stories and deduplicate
+      const allStories = [...session.stories, ...pastStories];
+      const uniqueStoriesMap = new Map(allStories.map(s => [s.id, s]));
+      const uniqueStories = Array.from(uniqueStoriesMap.values());
+
       const users = session.users.map((u: any) => ({
         id: u.id,
         name: u.name,
+        role: u.role,
       }));
 
-      const stories = session.stories.map((story: any) => {
+      const stories = uniqueStories.map((story: any) => {
         const votes = story.votes.map((vote: any) => {
           if (story.revealed) {
             return {
@@ -562,6 +647,103 @@ export class SessionManager {
     } catch (error) {
       console.error('Error getting session state:', error);
       return null;
+    }
+  }
+
+  async loadMorePastStories(
+    sessionId: string,
+    offset: number,
+    limit: number = 25
+  ): Promise<{ stories: any[]; hasMore: boolean; totalCount: number }> {
+    try {
+      // Get total count of past stories
+      const totalCount = await this.prisma.story.count({
+        where: {
+          sessionId,
+          revealed: true,
+          isFocused: false,
+        },
+      });
+
+      // Fetch the requested page of past stories
+      const stories = await this.prisma.story.findMany({
+        where: {
+          sessionId,
+          revealed: true,
+          isFocused: false,
+        },
+        include: {
+          votes: { include: { user: true } },
+          aiRecommendation: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit,
+      });
+
+      const hasMore = offset + stories.length < totalCount;
+
+      // Map stories to client format
+      const mappedStories = stories.map((story: any) => {
+        const votes = story.votes.map((vote: any) => ({
+          userId: vote.userId,
+          hasVoted: true,
+          value: vote.value ?? undefined,
+          modifier: vote.modifier ?? undefined,
+        }));
+
+        return {
+          id: story.id,
+          name: story.name,
+          description: story.description ?? undefined,
+          url: story.url ?? undefined,
+          revealed: story.revealed,
+          isFocused: story.isFocused,
+          votes,
+          aiRecommendation: story.aiRecommendation ? {
+            shouldBreakdown: story.aiRecommendation.shouldBreakdown,
+            recommendation: story.aiRecommendation.recommendation ?? undefined,
+            suggestedStories: story.aiRecommendation.suggestedStories ? (story.aiRecommendation.suggestedStories as string[]) : undefined,
+          } : undefined,
+        };
+      });
+
+      return { stories: mappedStories, hasMore, totalCount };
+    } catch (error) {
+      console.error('Error loading more past stories:', error);
+      return { stories: [], hasMore: false, totalCount: 0 };
+    }
+  }
+
+  async getUser(userId: string): Promise<{ id: string; name: string; role: string } | null> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!user) return null;
+      return {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+      };
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+  }
+
+  async getParticipantCount(sessionId: string): Promise<number> {
+    try {
+      return await this.prisma.user.count({
+        where: {
+          sessionId,
+          active: true,
+          role: 'participant',
+        },
+      });
+    } catch (error) {
+      console.error('Error getting participant count:', error);
+      return 0;
     }
   }
 

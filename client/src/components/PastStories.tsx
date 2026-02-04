@@ -24,6 +24,10 @@ interface PastStoriesProps {
   expandedStories: Set<string>;
   onToggleExpanded: (storyId: string) => void;
   darkMode: boolean;
+  hasMore: boolean;
+  onLoadMore: () => void;
+  loading: boolean;
+  totalCount: number;
 }
 
 export const PastStories = ({
@@ -31,6 +35,10 @@ export const PastStories = ({
   expandedStories,
   onToggleExpanded,
   darkMode,
+  hasMore,
+  onLoadMore,
+  loading,
+  totalCount,
 }: PastStoriesProps) => {
   if (pastStories.length === 0) return null;
 
@@ -132,6 +140,13 @@ export const PastStories = ({
             </div>
           );
         })}
+        {hasMore && (
+          <div style={styles.loadMoreContainer}>
+            <button onClick={onLoadMore} disabled={loading} style={styles.loadMoreButton}>
+              {loading ? 'Loading...' : `Load More (${pastStories.length}/${totalCount})`}
+            </button>
+          </div>
+        )}
       </div>
   );
 };
@@ -277,5 +292,20 @@ const getStyles = (colors: any, darkMode: boolean): { [key: string]: React.CSSPr
     fontSize: '14px',
     color: colors.text,
     lineHeight: '1.8',
+  },
+  loadMoreContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '16px',
+  },
+  loadMoreButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: '600',
+    backgroundColor: colors.primary,
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
   },
 });

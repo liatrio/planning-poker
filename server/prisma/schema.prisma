@@ -23,6 +23,7 @@ model User {
   name      String
   sessionId String
   active    Boolean  @default(true)
+  role      String   @default("participant")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -31,6 +32,7 @@ model User {
 
   @@unique([sessionId, name])
   @@index([sessionId])
+  @@index([sessionId, role])
 }
 
 model Story {
