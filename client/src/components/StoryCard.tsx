@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { VoteResults } from './VoteResults';
 import { VotingPanel } from './VotingPanel';
 import { TipTapRenderer } from './TipTapRenderer';
@@ -77,6 +78,20 @@ export const StoryCard = ({
   onVote,
   onSetModifier,
 }: StoryCardProps) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyUrl = async () => {
+    if (story.url) {
+      try {
+        await navigator.clipboard.writeText(story.url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy URL:', err);
+      }
+    }
+  };
+
   const colors = darkMode ? {
     surface: '#2d2d2d',
     text: '#e0e0e0',
@@ -140,14 +155,23 @@ export const StoryCard = ({
                 />
               )}
               {story.url && (
-                <a
-                  href={story.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.urlLink}
-                >
-                  {story.url}
-                </a>
+                <div style={styles.urlContainer}>
+                  <a
+                    href={story.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={styles.urlLink}
+                  >
+                    {story.url}
+                  </a>
+                  <button
+                    onClick={handleCopyUrl}
+                    style={styles.copyButton}
+                    title="Copy URL to clipboard"
+                  >
+                    {copied ? '✓ Copied' : '📋 Copy'}
+                  </button>
+                </div>
               )}
             </div>
             <div style={styles.storyActions}>
@@ -325,13 +349,30 @@ const getStyles = (colors: any, isFocused?: boolean, isCollapsed?: boolean): { [
     color: colors.textSecondary,
     margin: 0,
   },
+  urlContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginTop: '12px',
+  },
   urlLink: {
     fontSize: '14px',
     color: colors.primary,
     textDecoration: 'none',
     wordBreak: 'break-all',
-    marginTop: '12px',
-    display: 'block',
+    flex: 1,
+  },
+  copyButton: {
+    padding: '4px 12px',
+    fontSize: '12px',
+    fontWeight: '600',
+    backgroundColor: colors.surface,
+    color: colors.primary,
+    border: `1px solid ${colors.primary}`,
+    borderRadius: '4px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.2s',
   },
   storyActions: {
     display: 'flex',
