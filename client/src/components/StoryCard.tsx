@@ -352,7 +352,7 @@ const getStyles = (colors: any, isFocused?: boolean, isCollapsed?: boolean): { [
   urlContainer: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '12px',
     marginTop: '12px',
   },
   urlLink: {
@@ -360,10 +360,9 @@ const getStyles = (colors: any, isFocused?: boolean, isCollapsed?: boolean): { [
     color: colors.primary,
     textDecoration: 'none',
     wordBreak: 'break-all',
-    flex: 1,
   },
   copyButton: {
-    padding: '4px 12px',
+    padding: '4px 8px',
     fontSize: '12px',
     fontWeight: '600',
     backgroundColor: colors.surface,
@@ -373,6 +372,7 @@ const getStyles = (colors: any, isFocused?: boolean, isCollapsed?: boolean): { [
     cursor: 'pointer',
     whiteSpace: 'nowrap',
     transition: 'all 0.2s',
+    marginLeft: '4px',
   },
   storyActions: {
     display: 'flex',
