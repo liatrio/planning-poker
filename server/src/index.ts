@@ -17,6 +17,7 @@ import {
   StoryUpdatedMessage,
   StoryDeletedMessage,
   RefreshStoryMessage,
+  JiraPublishedMessage,
   VoteUpdateMessage,
   VotesRevealedMessage,
   VotesResetMessage,
@@ -260,6 +261,65 @@ wss.on('connection', (ws: WebSocket) => {
             };
             await sessionManager.broadcast(sessionInfo.sessionId, storyUpdated);
             console.log(`Story ${storyId} refreshed in session ${sessionInfo.sessionId}`);
+          }
+          break;
+        }
+
+        case MessageType.PUBLISH_TO_JIRA: {
+          const sessionInfo = userToSession.get(ws);
+          if (!sessionInfo) return;
+
+          const { storyId, storyPoints } = message;
+
+          // Get the existing story
+          const existingStory = await sessionManager.getStory(sessionInfo.sessionId, storyId);
+
+          if (!existingStory || !existingStory.url) {
+            const error: ErrorMessage = {
+              type: MessageType.ERROR,
+              message: 'Story must have a URL to publish to JIRA',
+            };
+            ws.send(JSON.stringify(error));
+            break;
+          }
+
+          // Check if JIRA is configured and URL is a JIRA URL
+          if (!jiraClient.isConfigured()) {
+            const error: ErrorMessage = {
+              type: MessageType.ERROR,
+              message: 'JIRA is not configured',
+            };
+            ws.send(JSON.stringify(error));
+            break;
+          }
+
+          if (!jiraClient.isJiraUrl(existingStory.url)) {
+            const error: ErrorMessage = {
+              type: MessageType.ERROR,
+              message: 'Story URL is not a JIRA URL',
+            };
+            ws.send(JSON.stringify(error));
+            break;
+          }
+
+          // Update story points in JIRA
+          console.log(`Publishing story points ${storyPoints} to JIRA for story ${storyId}`);
+          const success = await jiraClient.updateStoryPoints(existingStory.url, storyPoints);
+
+          if (success) {
+            const jiraPublished: JiraPublishedMessage = {
+              type: MessageType.JIRA_PUBLISHED,
+              storyId,
+              storyPoints,
+            };
+            await sessionManager.broadcast(sessionInfo.sessionId, jiraPublished);
+            console.log(`Successfully published story points to JIRA for story ${storyId}`);
+          } else {
+            const error: ErrorMessage = {
+              type: MessageType.ERROR,
+              message: 'Failed to publish story points to JIRA. Please check the server logs.',
+            };
+            ws.send(JSON.stringify(error));
           }
           break;
         }

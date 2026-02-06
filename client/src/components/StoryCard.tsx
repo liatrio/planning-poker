@@ -42,6 +42,7 @@ interface StoryCardProps {
   currentUserId: string | null;
   onEditStory: () => void;
   onRefreshStory?: () => void;
+  onPublishToJira?: () => void;
   onDeleteStory?: () => void;
   onFocusStory?: () => void;
   onUnfocusStory?: () => void;
@@ -69,6 +70,7 @@ export const StoryCard = ({
   currentUserId,
   onEditStory,
   onRefreshStory,
+  onPublishToJira,
   onDeleteStory,
   onFocusStory,
   onUnfocusStory,
@@ -210,6 +212,11 @@ export const StoryCard = ({
                   title={!isFocused ? 'Focus this story to reveal votes' : ''}
                 >
                   Reveal ({voteCount}/{totalUsers})
+                </button>
+              )}
+              {story.revealed && story.url && onPublishToJira && (
+                <button onClick={onPublishToJira} style={styles.successButton}>
+                  📤 Publish to JIRA
                 </button>
               )}
               {story.revealed && (
@@ -414,6 +421,16 @@ const getStyles = (colors: any, isFocused?: boolean, isCollapsed?: boolean): { [
     fontSize: '14px',
     fontWeight: '600',
     backgroundColor: '#dc3545',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  successButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: '600',
+    backgroundColor: '#28a745',
     color: 'white',
     border: 'none',
     borderRadius: '4px',

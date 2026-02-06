@@ -566,7 +566,11 @@ export class SessionManager {
               ],
             },
             include: {
-              votes: true,
+              votes: {
+                include: {
+                  user: true,
+                },
+              },
               aiRecommendation: true,
             },
             orderBy: [
@@ -587,7 +591,11 @@ export class SessionManager {
           isFocused: false,
         },
         include: {
-          votes: true,
+          votes: {
+            include: {
+              user: true,
+            },
+          },
           aiRecommendation: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -610,6 +618,7 @@ export class SessionManager {
           if (story.revealed) {
             return {
               userId: vote.userId,
+              userName: vote.user?.name || 'Unknown',
               hasVoted: true,
               value: vote.value ?? undefined,
               modifier: vote.modifier ?? undefined,
@@ -687,6 +696,7 @@ export class SessionManager {
       const mappedStories = stories.map((story: any) => {
         const votes = story.votes.map((vote: any) => ({
           userId: vote.userId,
+          userName: vote.user?.name || 'Unknown',
           hasVoted: true,
           value: vote.value ?? undefined,
           modifier: vote.modifier ?? undefined,

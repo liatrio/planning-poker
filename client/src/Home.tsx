@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Notification } from './components/Notification';
 import { SessionEntryForm } from './components/SessionEntryForm';
+import { getSessionHistory, SessionHistoryItem } from './utils/sessionHistory';
 
 const STORAGE_KEY_USERNAME = 'planning_poker_username';
 const STORAGE_KEY_SESSION = 'planning_poker_last_session';
@@ -16,6 +17,7 @@ export const Home = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [showCustomSessionModal, setShowCustomSessionModal] = useState(false);
   const [customSessionId, setCustomSessionId] = useState('');
+  const [recentSessions, setRecentSessions] = useState<SessionHistoryItem[]>([]);
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     const stored = localStorage.getItem(STORAGE_KEY_DARK_MODE);
     return stored === 'true';
@@ -25,6 +27,7 @@ export const Home = () => {
   useEffect(() => {
     const savedUsername = localStorage.getItem(STORAGE_KEY_USERNAME);
     const savedSession = localStorage.getItem(STORAGE_KEY_SESSION);
+    const history = getSessionHistory();
 
     if (savedUsername) {
       setUserName(savedUsername);
@@ -34,6 +37,8 @@ export const Home = () => {
       setStoredSession(savedSession);
       setShowRejoinPrompt(true);
     }
+
+    setRecentSessions(history);
   }, []);
 
   const rejoinSession = () => {
@@ -111,6 +116,18 @@ export const Home = () => {
     navigate(`/session/${sessionId}`);
   };
 
+  const joinRecentSession = (recentSessionId: string) => {
+    if (!userName.trim()) {
+      setNotification('Please enter your name');
+      return;
+    }
+
+    localStorage.setItem(STORAGE_KEY_USERNAME, userName);
+    localStorage.setItem(STORAGE_KEY_SESSION, recentSessionId);
+
+    navigate(`/session/${recentSessionId}`);
+  };
+
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
@@ -150,6 +167,7 @@ export const Home = () => {
         loading={loading}
         showRejoinPrompt={showRejoinPrompt}
         storedSession={storedSession}
+        recentSessions={recentSessions}
         darkMode={darkMode}
         onUserNameChange={setUserName}
         onSessionIdChange={setSessionId}
@@ -157,6 +175,7 @@ export const Home = () => {
         onJoinSession={joinSession}
         onRejoinSession={rejoinSession}
         onDismissRejoin={dismissRejoin}
+        onJoinRecentSession={joinRecentSession}
       />
       {notification && (
         <Notification message={notification} onClose={() => setNotification(null)} />

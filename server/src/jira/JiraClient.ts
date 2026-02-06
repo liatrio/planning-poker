@@ -288,4 +288,48 @@ export class JiraClient {
       description,
     };
   }
+
+  async updateStoryPoints(url: string, storyPoints: string): Promise<boolean> {
+    if (!this.client) {
+      console.warn('Jira client not configured');
+      return false;
+    }
+
+    if (!this.isJiraUrl(url)) {
+      console.warn('Invalid JIRA URL');
+      return false;
+    }
+
+    const ticketKey = this.extractTicketKey(url);
+    if (!ticketKey) {
+      console.warn('Could not extract ticket key from URL');
+      return false;
+    }
+
+    try {
+      // Update the story points field (customfield_10016 is the common field ID for story points)
+      // Note: The field ID may vary by JIRA instance. Common ones are:
+      // - customfield_10016 (most common)
+      // - customfield_10004
+      // - story_points
+      const numericValue = parseFloat(storyPoints);
+      const updateData = {
+        fields: {
+          customfield_10016: isNaN(numericValue) ? null : numericValue,
+        },
+      };
+
+      await this.client.put(`/issue/${ticketKey}`, updateData);
+      console.log(`Successfully updated story points for ${ticketKey} to ${storyPoints}`);
+      return true;
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        console.error(`Failed to update story points for ${ticketKey}. The field ID may be incorrect for your JIRA instance.`);
+        console.error('Error details:', error.response?.data);
+      } else {
+        console.error(`Failed to update story points for ${ticketKey}:`, error);
+      }
+      return false;
+    }
+  }
 }

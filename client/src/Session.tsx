@@ -8,6 +8,9 @@ import { NamePromptModal } from './components/NamePromptModal';
 import { ParticipantsPanel } from './components/ParticipantsPanel';
 import { PastStories } from './components/PastStories';
 import { StoryCard } from './components/StoryCard';
+import { PublishToJiraModal } from './components/PublishToJiraModal';
+import { ConfirmModal } from './components/ConfirmModal';
+import { addToSessionHistory } from './utils/sessionHistory';
 
 const FIBONACCI_VALUES = ['0', '1', '2', '3', '5', '8'];
 const STORAGE_KEY_USERNAME = 'planning_poker_username';
@@ -38,6 +41,9 @@ export const Session = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
   const [collapsedStories, setCollapsedStories] = useState<Set<string>>(new Set());
+  const [publishingStoryId, setPublishingStoryId] = useState<string | null>(null);
+  const [showChangeSessionModal, setShowChangeSessionModal] = useState(false);
+  const [deletingStoryId, setDeletingStoryId] = useState<string | null>(null);
 
   const { connected, users, stories, currentUserId, sendMessage, revealedVotesMap, aiRecommendationsMap, aiLoadingMap, hasMorePastStories, totalPastStoriesCount, loadingMoreStories, loadMorePastStories, error } = useWebSocket(
     sessionId || null,
@@ -61,6 +67,7 @@ export const Session = () => {
     if (connected && sessionId && userName) {
       localStorage.setItem(STORAGE_KEY_USERNAME, userName);
       localStorage.setItem(STORAGE_KEY_SESSION, sessionId);
+      addToSessionHistory(sessionId);
     }
   }, [connected, sessionId, userName]);
 
@@ -108,6 +115,24 @@ export const Session = () => {
 
     setSelectedVotesMap(newSelectedVotes);
   }, [stories, currentUserId]);
+
+  // Auto-collapse pending stories (not revealed and not focused) when joining/rejoining
+  useEffect(() => {
+    setCollapsedStories(prev => {
+      const newSet = new Set(prev);
+      stories.forEach(story => {
+        // Collapse pending stories (not revealed and not focused)
+        if (!story.revealed && !story.isFocused) {
+          newSet.add(story.id);
+        }
+        // Ensure focused stories are never collapsed
+        if (story.isFocused) {
+          newSet.delete(story.id);
+        }
+      });
+      return newSet;
+    });
+  }, [stories]);
 
   // Helper functions for localStorage vote persistence
   const getStoredVotes = (): Map<string, string> => {
@@ -290,27 +315,33 @@ export const Session = () => {
       return;
     }
 
-    if (window.confirm('Are you sure you want to delete this story?')) {
-      sendMessage({
-        type: MessageType.DELETE_STORY,
-        storyId,
-      });
+    setDeletingStoryId(storyId);
+  };
 
-      // Clean up localStorage
-      setSelectedVotesMap(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(storyId);
-        saveVotesToStorage(newMap);
-        return newMap;
-      });
+  const handleDeleteStoryConfirm = () => {
+    if (!deletingStoryId) return;
 
-      setSelectedModifiersMap(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(storyId);
-        saveModifiersToStorage(newMap);
-        return newMap;
-      });
-    }
+    sendMessage({
+      type: MessageType.DELETE_STORY,
+      storyId: deletingStoryId,
+    });
+
+    // Clean up localStorage
+    setSelectedVotesMap(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(deletingStoryId);
+      saveVotesToStorage(newMap);
+      return newMap;
+    });
+
+    setSelectedModifiersMap(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(deletingStoryId);
+      saveModifiersToStorage(newMap);
+      return newMap;
+    });
+
+    setDeletingStoryId(null);
   };
 
   const refreshStory = (storyId: string) => {
@@ -327,6 +358,30 @@ export const Session = () => {
     setNotification('Refreshing story from Jira...');
   };
 
+  const openPublishModal = (storyId: string) => {
+    const story = stories.find(s => s.id === storyId);
+    if (!story?.url) {
+      setNotification('Story must have a URL to publish to JIRA');
+      return;
+    }
+    if (!story.revealed) {
+      setNotification('Story must be revealed before publishing to JIRA');
+      return;
+    }
+    setPublishingStoryId(storyId);
+  };
+
+  const publishToJira = (storyPoints: string) => {
+    if (!publishingStoryId) return;
+
+    sendMessage({
+      type: MessageType.PUBLISH_TO_JIRA,
+      storyId: publishingStoryId,
+      storyPoints,
+    });
+    setNotification('Publishing to JIRA...');
+  };
+
   const copySessionLink = () => {
     const link = window.location.href.split('?')[0];
     navigator.clipboard.writeText(link);
@@ -338,6 +393,15 @@ export const Session = () => {
       navigator.clipboard.writeText(sessionId);
       setNotification('Session ID copied to clipboard!');
     }
+  };
+
+  const changeSession = () => {
+    setShowChangeSessionModal(true);
+  };
+
+  const handleChangeSessionConfirm = () => {
+    localStorage.removeItem(STORAGE_KEY_SESSION);
+    navigate('/', { replace: true });
   };
 
   const getVoteCount = (story: typeof stories[0]) => {
@@ -486,6 +550,9 @@ export const Session = () => {
           <button onClick={copySessionLink} style={styles.copyButton}>
             Copy Session Link
           </button>
+          <button onClick={changeSession} style={styles.copyButton}>
+            Change Session
+          </button>
         </div>
       </div>
 
@@ -524,6 +591,7 @@ export const Session = () => {
                   currentUserId={currentUserId}
                   onEditStory={() => setEditingStoryId(story.id)}
                   onRefreshStory={() => refreshStory(story.id)}
+                  onPublishToJira={() => openPublishModal(story.id)}
                   onDeleteStory={() => deleteStory(story.id)}
                   onFocusStory={() => setFocusedStory(story.id)}
                   onUnfocusStory={unfocusStory}
@@ -598,8 +666,51 @@ export const Session = () => {
           />
         );
       })()}
+      {publishingStoryId && (() => {
+        const publishingStory = stories.find(s => s.id === publishingStoryId);
+        const average = calculateAverage(publishingStoryId);
+        const suggestedValue = average || '?';
+        return (
+          <PublishToJiraModal
+            isOpen={true}
+            storyName={publishingStory?.name || ''}
+            suggestedValue={suggestedValue}
+            darkMode={darkMode}
+            onPublish={publishToJira}
+            onClose={() => setPublishingStoryId(null)}
+          />
+        );
+      })()}
+      <ConfirmModal
+        isOpen={showChangeSessionModal}
+        title="Change Session"
+        message="Are you sure you want to leave this session?"
+        confirmText="Leave Session"
+        cancelText="Stay"
+        darkMode={darkMode}
+        onConfirm={handleChangeSessionConfirm}
+        onCancel={() => setShowChangeSessionModal(false)}
+      />
+      {deletingStoryId && (() => {
+        const deletingStory = stories.find(s => s.id === deletingStoryId);
+        return (
+          <ConfirmModal
+            isOpen={true}
+            title="Delete Story"
+            message={`Are you sure you want to delete "${deletingStory?.name}"? This action cannot be undone.`}
+            confirmText="Delete"
+            cancelText="Cancel"
+            darkMode={darkMode}
+            onConfirm={handleDeleteStoryConfirm}
+            onCancel={() => setDeletingStoryId(null)}
+          />
+        );
+      })()}
       {notification && (
         <Notification message={notification} onClose={() => setNotification(null)} />
+      )}
+      {error && (
+        <Notification message={error} onClose={() => {}} />
       )}
     </div>
   );

@@ -1,9 +1,12 @@
+import { SessionHistoryItem } from '../utils/sessionHistory';
+
 interface SessionEntryFormProps {
   userName: string;
   sessionId: string;
   loading: boolean;
   showRejoinPrompt: boolean;
   storedSession: string | null;
+  recentSessions: SessionHistoryItem[];
   darkMode: boolean;
   onUserNameChange: (name: string) => void;
   onSessionIdChange: (id: string) => void;
@@ -11,6 +14,7 @@ interface SessionEntryFormProps {
   onJoinSession: () => void;
   onRejoinSession: () => void;
   onDismissRejoin: () => void;
+  onJoinRecentSession: (sessionId: string) => void;
 }
 
 export const SessionEntryForm = ({
@@ -19,6 +23,7 @@ export const SessionEntryForm = ({
   loading,
   showRejoinPrompt,
   storedSession,
+  recentSessions,
   darkMode,
   onUserNameChange,
   onSessionIdChange,
@@ -26,6 +31,7 @@ export const SessionEntryForm = ({
   onJoinSession,
   onRejoinSession,
   onDismissRejoin,
+  onJoinRecentSession,
 }: SessionEntryFormProps) => {
   const colors = darkMode ? {
     background: '#1a1a1a',
@@ -126,10 +132,47 @@ export const SessionEntryForm = ({
           <button onClick={onJoinSession} style={styles.secondaryButton}>
             Join Existing Session
           </button>
+
+          {recentSessions.length > 0 && (
+            <>
+              <div style={styles.divider}>
+                <span style={styles.dividerText}>RECENT SESSIONS</span>
+              </div>
+
+              <div style={styles.recentSessions}>
+                {recentSessions.slice(0, 5).map((session) => (
+                  <button
+                    key={session.sessionId}
+                    onClick={() => onJoinRecentSession(session.sessionId)}
+                    style={styles.recentSessionButton}
+                  >
+                    <span style={styles.recentSessionId}>{session.sessionId}</span>
+                    <span style={styles.recentSessionTime}>
+                      {formatRelativeTime(session.lastJoined)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
   );
+};
+
+const formatRelativeTime = (timestamp: number): string => {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString();
 };
 
 const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
@@ -232,5 +275,32 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
     border: 'none',
     cursor: 'pointer',
     textDecoration: 'underline',
+  },
+  recentSessions: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  recentSessionButton: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '12px',
+    fontSize: '14px',
+    backgroundColor: colors.surfaceHover,
+    color: colors.text,
+    border: `1px solid ${colors.border}`,
+    borderRadius: '4px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  recentSessionId: {
+    fontFamily: 'monospace',
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  recentSessionTime: {
+    fontSize: '12px',
+    color: colors.textSecondary,
   },
 });

@@ -109,6 +109,26 @@ export const useWebSocket = (
               });
               return newMap;
             });
+            // Populate revealedVotesMap for revealed stories
+            setRevealedVotesMap((prev) => {
+              const newMap = new Map(prev);
+              message.stories.forEach(story => {
+                if (story.revealed) {
+                  // Map votes to include user names (userName comes from server for past stories)
+                  const revealedVotes = story.votes
+                    .filter(vote => vote.hasVoted)
+                    .map(vote => {
+                      return {
+                        userId: vote.userId,
+                        userName: vote.userName || 'Unknown',
+                        value: vote.value ?? null,
+                      };
+                    });
+                  newMap.set(story.id, revealedVotes);
+                }
+              });
+              return newMap;
+            });
             setError(null);
             break;
 
@@ -167,6 +187,11 @@ export const useWebSocket = (
               newMap.delete(message.storyId);
               return newMap;
             });
+            break;
+
+          case MessageType.JIRA_PUBLISHED:
+            console.log(`Successfully published story ${message.storyId} to JIRA with ${message.storyPoints} story points`);
+            // Notification will be shown in Session.tsx via error state or by listening to this message
             break;
 
           case MessageType.VOTE_UPDATE:
@@ -304,6 +329,34 @@ export const useWebSocket = (
                 }
               });
               return merged;
+            });
+            // Load AI recommendations for past stories
+            setAiRecommendationsMap((prev) => {
+              const newMap = new Map(prev);
+              message.stories.forEach(story => {
+                if (story.aiRecommendation) {
+                  newMap.set(story.id, story.aiRecommendation);
+                }
+              });
+              return newMap;
+            });
+            // Populate revealedVotesMap for past stories (they're all revealed)
+            setRevealedVotesMap((prev) => {
+              const newMap = new Map(prev);
+              message.stories.forEach(story => {
+                // Map votes to include user names (userName comes from server for past stories)
+                const revealedVotes = story.votes
+                  .filter(vote => vote.hasVoted)
+                  .map(vote => {
+                    return {
+                      userId: vote.userId,
+                      userName: vote.userName || 'Unknown',
+                      value: vote.value ?? null,
+                    };
+                  });
+                newMap.set(story.id, revealedVotes);
+              });
+              return newMap;
             });
             setHasMorePastStories(message.hasMore);
             setTotalPastStoriesCount(message.totalCount);

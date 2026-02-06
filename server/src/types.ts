@@ -51,6 +51,8 @@ export enum MessageType {
   STORY_UNFOCUSED = 'story_unfocused',
   CHANGE_ROLE = 'change_role',
   ROLE_CHANGED = 'role_changed',
+  PUBLISH_TO_JIRA = 'publish_to_jira',
+  JIRA_PUBLISHED = 'jira_published',
   AI_ANALYSIS_STARTED = 'ai_analysis_started',
   AI_RECOMMENDATION = 'ai_recommendation',
   LOAD_MORE_STORIES = 'load_more_stories',
@@ -128,6 +130,12 @@ export interface LoadMoreStoriesMessage {
   limit?: number;
 }
 
+export interface PublishToJiraMessage {
+  type: MessageType.PUBLISH_TO_JIRA;
+  storyId: string;
+  storyPoints: string;
+}
+
 export type ClientMessage =
   | JoinMessage
   | CreateStoryMessage
@@ -140,7 +148,8 @@ export type ClientMessage =
   | SetFocusedStoryMessage
   | UnfocusStoryMessage
   | ChangeRoleMessage
-  | LoadMoreStoriesMessage;
+  | LoadMoreStoriesMessage
+  | PublishToJiraMessage;
 
 export interface UserJoinedMessage {
   type: MessageType.USER_JOINED;
@@ -215,6 +224,12 @@ export interface StoryDeletedMessage {
   storyId: string;
 }
 
+export interface JiraPublishedMessage {
+  type: MessageType.JIRA_PUBLISHED;
+  storyId: string;
+  storyPoints: string;
+}
+
 export interface AIAnalysisStartedMessage {
   type: MessageType.AI_ANALYSIS_STARTED;
   storyId: string;
@@ -237,7 +252,7 @@ export interface PastStoriesLoadedMessage {
     url?: string;
     revealed: boolean;
     isFocused: boolean;
-    votes: Array<{ userId: string; hasVoted: boolean; value?: string; modifier?: string }>;
+    votes: Array<{ userId: string; userName?: string; hasVoted: boolean; value?: string; modifier?: string }>;
     aiRecommendation?: {
       shouldBreakdown: boolean;
       recommendation?: string;
@@ -258,7 +273,12 @@ export interface SessionStateMessage {
     url?: string;
     revealed: boolean;
     isFocused: boolean;
-    votes: Array<{ userId: string; hasVoted: boolean; value?: string; modifier?: string }>;
+    votes: Array<{ userId: string; userName?: string; hasVoted: boolean; value?: string; modifier?: string }>;
+    aiRecommendation?: {
+      shouldBreakdown: boolean;
+      recommendation?: string;
+      suggestedStories?: string[];
+    };
   }>;
 }
 
@@ -279,6 +299,7 @@ export type ServerMessage =
   | StoryFocusedMessage
   | StoryUnfocusedMessage
   | RoleChangedMessage
+  | JiraPublishedMessage
   | AIAnalysisStartedMessage
   | AIRecommendationMessage
   | PastStoriesLoadedMessage
