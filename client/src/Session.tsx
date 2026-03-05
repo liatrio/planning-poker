@@ -557,7 +557,11 @@ export const Session = () => {
       </div>
 
       <div style={styles.content}>
-        <ParticipantsPanel users={users} darkMode={darkMode} />
+        <ParticipantsPanel
+          users={users}
+          darkMode={darkMode}
+          focusedStoryVotes={stories.find(s => s.isFocused)?.votes}
+        />
 
         <div style={styles.main}>
           <div style={styles.createStorySection}>
@@ -589,6 +593,7 @@ export const Session = () => {
                   isFocused={story.isFocused}
                   isCollapsed={collapsedStories.has(story.id)}
                   currentUserId={currentUserId}
+                  isObserver={users.find(u => u.id === currentUserId)?.role === 'observer'}
                   onEditStory={() => setEditingStoryId(story.id)}
                   onRefreshStory={() => refreshStory(story.id)}
                   onPublishToJira={() => openPublishModal(story.id)}

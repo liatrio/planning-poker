@@ -4,17 +4,30 @@ interface User {
   role?: string;
 }
 
+interface Vote {
+  userId: string;
+  hasVoted: boolean;
+}
+
 interface ParticipantsPanelProps {
   users: User[];
   darkMode: boolean;
+  focusedStoryVotes?: Vote[];
 }
 
 export const ParticipantsPanel = ({
   users,
   darkMode,
+  focusedStoryVotes,
 }: ParticipantsPanelProps) => {
   const participantCount = users.filter(u => u.role !== 'observer').length;
   const observerCount = users.filter(u => u.role === 'observer').length;
+
+  const getUserVoteStatus = (userId: string): boolean | null => {
+    if (!focusedStoryVotes) return null;
+    const vote = focusedStoryVotes.find(v => v.userId === userId);
+    return vote ? vote.hasVoted : false;
+  };
 
   const colors = darkMode ? {
     surface: '#2d2d2d',
@@ -39,14 +52,27 @@ export const ParticipantsPanel = ({
         <div style={styles.observerCount}>Observers: {observerCount}</div>
       )}
       <div style={styles.userList}>
-        {users.map((user) => (
-          <div key={user.id} style={styles.userItem}>
-            <span>{user.name}</span>
-            {user.role === 'observer' && (
-              <span style={styles.observerBadge}>👁️ Observer</span>
-            )}
-          </div>
-        ))}
+        {users.map((user) => {
+          const voteStatus = getUserVoteStatus(user.id);
+          const hasVoted = voteStatus === true;
+          const showVoteStatus = voteStatus !== null && user.role !== 'observer';
+
+          return (
+            <div key={user.id} style={styles.userItem}>
+              <div style={styles.userInfo}>
+                {showVoteStatus && (
+                  <span style={styles.voteStatus}>
+                    {hasVoted ? '✓' : '☐'}
+                  </span>
+                )}
+                <span>{user.name}</span>
+              </div>
+              {user.role === 'observer' && (
+                <span style={styles.observerBadge}>👁️</span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -59,6 +85,9 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
     padding: '20px',
     minWidth: '250px',
     height: 'fit-content',
+    position: 'sticky',
+    top: '20px',
+    alignSelf: 'flex-start',
   },
   sectionTitle: {
     fontSize: '18px',
@@ -85,9 +114,15 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
     borderRadius: '4px',
     color: colors.text,
   },
+  userInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
   voteStatus: {
-    fontSize: '18px',
-    color: '#28a745',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    minWidth: '20px',
   },
   observerBadge: {
     fontSize: '12px',

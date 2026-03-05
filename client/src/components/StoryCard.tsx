@@ -40,6 +40,7 @@ interface StoryCardProps {
   isFocused?: boolean;
   isCollapsed?: boolean;
   currentUserId: string | null;
+  isObserver?: boolean;
   onEditStory: () => void;
   onRefreshStory?: () => void;
   onPublishToJira?: () => void;
@@ -68,6 +69,7 @@ export const StoryCard = ({
   isFocused,
   isCollapsed,
   currentUserId,
+  isObserver,
   onEditStory,
   onRefreshStory,
   onPublishToJira,
@@ -264,15 +266,17 @@ export const StoryCard = ({
             </div>
           )}
 
-          <VotingPanel
-            fibonacciValues={fibonacciValues}
-            selectedVote={selectedVote}
-            selectedModifier={selectedModifier}
-            isRevealed={story.revealed}
-            onVote={onVote}
-            onSetModifier={onSetModifier}
-            darkMode={darkMode}
-          />
+          {!isObserver && (
+            <VotingPanel
+              fibonacciValues={fibonacciValues}
+              selectedVote={selectedVote}
+              selectedModifier={selectedModifier}
+              isRevealed={story.revealed}
+              onVote={onVote}
+              onSetModifier={onSetModifier}
+              darkMode={darkMode}
+            />
+          )}
         </>
       )}
       </div>
