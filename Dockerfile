@@ -6,6 +6,11 @@ FROM node:20-alpine AS builder
 # Install OpenSSL for Prisma
 RUN apk add --no-cache openssl
 
+# Force dev mode in the builder stage. If NODE_ENV=production leaks in from the
+# host (common on Windows/CI), npm will silently skip devDependencies like
+# typescript, producing `sh: tsc: not found`.
+ENV NODE_ENV=development
+
 WORKDIR /app
 
 # Copy package files including lockfile
@@ -13,10 +18,12 @@ COPY package.json package-lock.json ./
 COPY server/package.json ./server/
 COPY client/package.json ./client/
 
-# Install all dependencies (workspaces) — --include=dev is the default in npm
-# v7+, but set it explicitly so the build works even if NODE_ENV=production
-# leaks in from the build environment.
-RUN npm ci --include=dev
+# Install all dependencies across all workspaces, dev included.
+RUN npm ci --include=dev --workspaces --include-workspace-root
+
+# Fail fast with a useful message if typescript didn't land, so downstream
+# `tsc: not found` errors don't mask the real cause.
+RUN test -x node_modules/.bin/tsc || (echo "ERROR: typescript was not installed. Check NODE_ENV and package-lock.json." && ls node_modules/.bin | head -40 && exit 1)
 
 # Copy source code
 COPY server ./server
