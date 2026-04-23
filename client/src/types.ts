@@ -45,6 +45,11 @@ export interface Story {
   revealed: boolean;
   isFocused?: boolean;
   votes: Vote[];
+  aiRecommendation?: {
+    shouldBreakdown: boolean;
+    recommendation?: string;
+    suggestedStories?: string[];
+  };
 }
 
 export interface Vote {

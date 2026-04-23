@@ -41,6 +41,7 @@ export const PublishStoryPointsModal = ({
   const colors = darkMode ? {
     overlay: 'rgba(0, 0, 0, 0.7)',
     surface: '#2d2d2d',
+    surfaceAlt: '#1a1a1a',
     text: '#e0e0e0',
     textSecondary: '#b0b0b0',
     border: '#404040',
@@ -49,6 +50,7 @@ export const PublishStoryPointsModal = ({
   } : {
     overlay: 'rgba(0, 0, 0, 0.5)',
     surface: '#ffffff',
+    surfaceAlt: '#f5f5f5',
     text: '#333',
     textSecondary: '#666',
     border: '#e0e0e0',
@@ -171,7 +173,7 @@ const getStyles = (colors: any): { [key: string]: React.CSSProperties } => ({
     fontSize: '16px',
     color: colors.text,
     padding: '12px',
-    backgroundColor: darkMode ? '#1a1a1a' : '#f5f5f5',
+    backgroundColor: colors.surfaceAlt,
     borderRadius: '4px',
     border: `1px solid ${colors.border}`,
   },

@@ -13,20 +13,20 @@ COPY package.json package-lock.json ./
 COPY server/package.json ./server/
 COPY client/package.json ./client/
 
-# Install all dependencies (workspaces)
-RUN npm ci
+# Install all dependencies (workspaces) — --include=dev is the default in npm
+# v7+, but set it explicitly so the build works even if NODE_ENV=production
+# leaks in from the build environment.
+RUN npm ci --include=dev
 
 # Copy source code
 COPY server ./server
 COPY client ./client
 
-# Build server
-WORKDIR /app/server
-RUN npm run build
-
-# Build client
-WORKDIR /app/client
-RUN npm run build
+# Build both workspaces from the repo root. Running via --workspace keeps npm
+# in the root context so `tsc` (hoisted into /app/node_modules/.bin) is always
+# found, even when workspace symlinks are flaky (e.g. Windows → WSL2 Docker).
+RUN npm run build --workspace=server
+RUN npm run build --workspace=client
 
 # Production stage
 FROM node:20-alpine
