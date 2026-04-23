@@ -1,22 +1,24 @@
 import { useState } from 'react';
 
-interface PublishToJiraModalProps {
+interface PublishStoryPointsModalProps {
   isOpen: boolean;
   storyName: string;
   suggestedValue: string;
+  providerName: string;
   darkMode: boolean;
   onPublish: (storyPoints: string) => void;
   onClose: () => void;
 }
 
-export const PublishToJiraModal = ({
+export const PublishStoryPointsModal = ({
   isOpen,
   storyName,
   suggestedValue,
+  providerName,
   darkMode,
   onPublish,
   onClose,
-}: PublishToJiraModalProps) => {
+}: PublishStoryPointsModalProps) => {
   const [storyPoints, setStoryPoints] = useState(suggestedValue);
 
   if (!isOpen) return null;
@@ -60,7 +62,7 @@ export const PublishToJiraModal = ({
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={styles.modalHeader}>
-          <h2 style={styles.modalTitle}>Publish to JIRA</h2>
+          <h2 style={styles.modalTitle}>Publish to {providerName}</h2>
           <button onClick={onClose} style={styles.closeButton}>×</button>
         </div>
         <div style={styles.modalContent}>
@@ -83,7 +85,7 @@ export const PublishToJiraModal = ({
               placeholder="Enter story points"
             />
             <div style={styles.helpText}>
-              You can modify the suggested value before publishing to JIRA
+              You can modify the suggested value before publishing to {providerName}
             </div>
           </div>
         </div>
@@ -96,7 +98,7 @@ export const PublishToJiraModal = ({
             style={styles.publishButton}
             disabled={!storyPoints.trim()}
           >
-            Publish to JIRA
+            Publish to {providerName}
           </button>
         </div>
       </div>

@@ -21,8 +21,8 @@ export enum MessageType {
   STORY_UNFOCUSED = 'story_unfocused',
   CHANGE_ROLE = 'change_role',
   ROLE_CHANGED = 'role_changed',
-  PUBLISH_TO_JIRA = 'publish_to_jira',
-  JIRA_PUBLISHED = 'jira_published',
+  PUBLISH_STORY_POINTS = 'publish_story_points',
+  STORY_POINTS_PUBLISHED = 'story_points_published',
   AI_ANALYSIS_STARTED = 'ai_analysis_started',
   AI_RECOMMENDATION = 'ai_recommendation',
   LOAD_MORE_STORIES = 'load_more_stories',
@@ -124,8 +124,8 @@ export interface LoadMoreStoriesMessage {
   limit?: number;
 }
 
-export interface PublishToJiraMessage {
-  type: MessageType.PUBLISH_TO_JIRA;
+export interface PublishStoryPointsMessage {
+  type: MessageType.PUBLISH_STORY_POINTS;
   storyId: string;
   storyPoints: string;
 }
@@ -143,7 +143,7 @@ export type ClientMessage =
   | UnfocusStoryMessage
   | ChangeRoleMessage
   | LoadMoreStoriesMessage
-  | PublishToJiraMessage;
+  | PublishStoryPointsMessage;
 
 export interface UserJoinedMessage {
   type: MessageType.USER_JOINED;
@@ -170,8 +170,8 @@ export interface StoryDeletedMessage {
   storyId: string;
 }
 
-export interface JiraPublishedMessage {
-  type: MessageType.JIRA_PUBLISHED;
+export interface StoryPointsPublishedMessage {
+  type: MessageType.STORY_POINTS_PUBLISHED;
   storyId: string;
   storyPoints: string;
 }
@@ -261,7 +261,7 @@ export type ServerMessage =
   | StoryCreatedMessage
   | StoryUpdatedMessage
   | StoryDeletedMessage
-  | JiraPublishedMessage
+  | StoryPointsPublishedMessage
   | VoteUpdateMessage
   | VotesRevealedMessage
   | VotesResetMessage

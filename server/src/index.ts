@@ -7,6 +7,8 @@ import { join } from 'path';
 import { SessionManager } from './sessionManager';
 import { AIProviderFactory } from './ai/AIProviderFactory';
 import { JiraClient } from './jira/JiraClient';
+import { AzureDevOpsClient } from './azuredevops/AzureDevOpsClient';
+import { StoryProviderRegistry } from './story/StoryProviderRegistry';
 import {
   ClientMessage,
   MessageType,
@@ -17,7 +19,7 @@ import {
   StoryUpdatedMessage,
   StoryDeletedMessage,
   RefreshStoryMessage,
-  JiraPublishedMessage,
+  StoryPointsPublishedMessage,
   VoteUpdateMessage,
   VotesRevealedMessage,
   VotesResetMessage,
@@ -40,6 +42,8 @@ const sessionManager = new SessionManager();
 const userToSession = new Map<WebSocket, { sessionId: string; userId: string }>();
 const aiProvider = AIProviderFactory.createProvider();
 const jiraClient = new JiraClient();
+const azureDevOpsClient = new AzureDevOpsClient();
+const storyProviders = new StoryProviderRegistry([jiraClient, azureDevOpsClient]);
 
 // Load AI rules file if it exists
 let aiRules: string | undefined;
@@ -132,30 +136,28 @@ wss.on('connection', (ws: WebSocket) => {
 
           let { name, description, url } = message;
 
-          // If URL is a Jira URL and Jira is configured, fetch title and description from Jira
-          if (url && jiraClient.isConfigured() && jiraClient.isJiraUrl(url)) {
-            console.log(`Fetching Jira ticket data for URL: ${url}`);
-            const jiraData = await jiraClient.enrichStoryFromJiraUrl(url);
+          const provider = url ? storyProviders.forUrl(url) : null;
+          if (provider) {
+            console.log(`Fetching ${provider.name} data for URL: ${url}`);
+            const data = await provider.enrichStoryFromUrl(url!);
 
-            if (jiraData) {
-              name = jiraData.name;
-              description = jiraData.description;
-              console.log(`Successfully fetched Jira data: "${name}"`);
+            if (data) {
+              name = data.name;
+              description = data.description;
+              console.log(`Successfully fetched ${provider.name} data: "${name}"`);
             } else {
-              // Failed to fetch Jira data - return error
               const error: ErrorMessage = {
                 type: MessageType.ERROR,
-                message: 'Failed to fetch data from Jira URL. Please check the URL and try again.',
+                message: `Failed to fetch data from ${provider.name} URL. Please check the URL and try again.`,
               };
               ws.send(JSON.stringify(error));
-              console.error('Failed to fetch Jira data for URL:', url);
+              console.error(`Failed to fetch ${provider.name} data for URL:`, url);
               return;
             }
           } else if (!name) {
-            // No Jira URL and no name provided - return error
             const error: ErrorMessage = {
               type: MessageType.ERROR,
-              message: 'Story name is required when not using a Jira URL.',
+              message: 'Story name is required when not using a supported tracker URL.',
             };
             ws.send(JSON.stringify(error));
             return;
@@ -228,14 +230,15 @@ wss.on('connection', (ws: WebSocket) => {
           let description = existingStory.description;
           const url = existingStory.url;
 
-          if (jiraClient.isConfigured() && jiraClient.isJiraUrl(url)) {
-            console.log(`Refreshing Jira ticket data for URL: ${url}`);
-            const jiraData = await jiraClient.enrichStoryFromJiraUrl(url);
+          const provider = storyProviders.forUrl(url);
+          if (provider) {
+            console.log(`Refreshing ${provider.name} data for URL: ${url}`);
+            const data = await provider.enrichStoryFromUrl(url);
 
-            if (jiraData) {
-              name = jiraData.name;
-              description = jiraData.description;
-              console.log(`Successfully refreshed Jira data: "${name}"`);
+            if (data) {
+              name = data.name;
+              description = data.description;
+              console.log(`Successfully refreshed ${provider.name} data: "${name}"`);
             }
           }
 
@@ -265,59 +268,48 @@ wss.on('connection', (ws: WebSocket) => {
           break;
         }
 
-        case MessageType.PUBLISH_TO_JIRA: {
+        case MessageType.PUBLISH_STORY_POINTS: {
           const sessionInfo = userToSession.get(ws);
           if (!sessionInfo) return;
 
           const { storyId, storyPoints } = message;
 
-          // Get the existing story
           const existingStory = await sessionManager.getStory(sessionInfo.sessionId, storyId);
 
           if (!existingStory || !existingStory.url) {
             const error: ErrorMessage = {
               type: MessageType.ERROR,
-              message: 'Story must have a URL to publish to JIRA',
+              message: 'Story must have a URL to publish story points',
             };
             ws.send(JSON.stringify(error));
             break;
           }
 
-          // Check if JIRA is configured and URL is a JIRA URL
-          if (!jiraClient.isConfigured()) {
+          const provider = storyProviders.forUrl(existingStory.url);
+          if (!provider) {
             const error: ErrorMessage = {
               type: MessageType.ERROR,
-              message: 'JIRA is not configured',
+              message: 'Story URL does not match a configured tracker',
             };
             ws.send(JSON.stringify(error));
             break;
           }
 
-          if (!jiraClient.isJiraUrl(existingStory.url)) {
-            const error: ErrorMessage = {
-              type: MessageType.ERROR,
-              message: 'Story URL is not a JIRA URL',
-            };
-            ws.send(JSON.stringify(error));
-            break;
-          }
-
-          // Update story points in JIRA
-          console.log(`Publishing story points ${storyPoints} to JIRA for story ${storyId}`);
-          const success = await jiraClient.updateStoryPoints(existingStory.url, storyPoints);
+          console.log(`Publishing story points ${storyPoints} to ${provider.name} for story ${storyId}`);
+          const success = await provider.updateStoryPoints(existingStory.url, storyPoints);
 
           if (success) {
-            const jiraPublished: JiraPublishedMessage = {
-              type: MessageType.JIRA_PUBLISHED,
+            const published: StoryPointsPublishedMessage = {
+              type: MessageType.STORY_POINTS_PUBLISHED,
               storyId,
               storyPoints,
             };
-            await sessionManager.broadcast(sessionInfo.sessionId, jiraPublished);
-            console.log(`Successfully published story points to JIRA for story ${storyId}`);
+            await sessionManager.broadcast(sessionInfo.sessionId, published);
+            console.log(`Successfully published story points to ${provider.name} for story ${storyId}`);
           } else {
             const error: ErrorMessage = {
               type: MessageType.ERROR,
-              message: 'Failed to publish story points to JIRA. Please check the server logs.',
+              message: `Failed to publish story points to ${provider.name}. Please check the server logs.`,
             };
             ws.send(JSON.stringify(error));
           }

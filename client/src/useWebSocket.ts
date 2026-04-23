@@ -189,8 +189,8 @@ export const useWebSocket = (
             });
             break;
 
-          case MessageType.JIRA_PUBLISHED:
-            console.log(`Successfully published story ${message.storyId} to JIRA with ${message.storyPoints} story points`);
+          case MessageType.STORY_POINTS_PUBLISHED:
+            console.log(`Successfully published story ${message.storyId} with ${message.storyPoints} story points`);
             // Notification will be shown in Session.tsx via error state or by listening to this message
             break;
 

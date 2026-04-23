@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-Real-time collaborative Planning Poker application with AI-powered story analysis, Jira integration, vote modifiers, and persistent sessions. Built with React, Node.js, WebSocket, and PostgreSQL.
+Real-time collaborative Planning Poker application with AI-powered story analysis, Jira and Azure DevOps integration, vote modifiers, and persistent sessions. Built with React, Node.js, WebSocket, and PostgreSQL.
 
 ```bash
 # Quick start (requires PostgreSQL and Node.js 18+)
@@ -25,7 +25,7 @@ Planning Poker is a collaborative estimation tool designed for agile teams to es
 - **Multi-Story Management**: Queue multiple stories, focus on one at a time
 - **Vote Modifiers**: Soft up/down adjustments and question markers
 - **AI Story Analysis**: Automatic recommendations to break down complex stories
-- **Jira Integration**: Auto-import ticket titles and descriptions with images
+- **Tracker Integration**: Auto-import titles and descriptions from Jira and Azure DevOps work items, and publish story points back
 - **Rich Text Editor**: TipTap-based editor with Markdown/JSON import support
 - **Persistent Sessions**: PostgreSQL-backed storage with automatic user reconnection
 - **Dark Mode**: System-wide dark theme support
@@ -103,6 +103,11 @@ Planning Poker is a collaborative estimation tool designed for agile teams to es
    JIRA_EMAIL=your-email@company.com
    JIRA_API_TOKEN=your_token_here
    JIRA_COMPANY=yourcompany
+
+   # Azure DevOps Integration (OPTIONAL)
+   AZURE_DEVOPS_ORG=yourorg
+   AZURE_DEVOPS_PAT=your_pat_here
+   AZURE_DEVOPS_PROJECT=yourproject
    ```
 
 5. **Run database migrations**
@@ -170,6 +175,18 @@ See [server/AI_PROVIDER_SETUP.md](server/AI_PROVIDER_SETUP.md) for detailed setu
    JIRA_COMPANY=yourcompany
    ```
 3. When creating stories, paste a Jira URL and the title/description will auto-populate
+
+### Azure DevOps Integration
+
+1. Create a Personal Access Token with **Work Items: Read & Write** scope: https://dev.azure.com/{org}/_usersSettings/tokens
+2. Configure in `server/.env`:
+   ```env
+   AZURE_DEVOPS_ORG=yourorg
+   AZURE_DEVOPS_PAT=your_pat_here
+   # Optional: default project when omitted from the URL
+   AZURE_DEVOPS_PROJECT=yourproject
+   ```
+3. Paste a work item URL — `https://dev.azure.com/{org}/{project}/_workitems/edit/{id}` — and the title/description will auto-populate. Story points publish back to the `Microsoft.VSTS.Scheduling.StoryPoints` field.
 
 ---
 

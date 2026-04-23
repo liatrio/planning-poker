@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { VoteResults } from './VoteResults';
 import { VotingPanel } from './VotingPanel';
 import { TipTapRenderer } from './TipTapRenderer';
+import { detectProviderName } from '../providers';
 
 interface Story {
   id: string;
@@ -43,7 +44,7 @@ interface StoryCardProps {
   isObserver?: boolean;
   onEditStory: () => void;
   onRefreshStory?: () => void;
-  onPublishToJira?: () => void;
+  onPublishStoryPoints?: () => void;
   onDeleteStory?: () => void;
   onFocusStory?: () => void;
   onUnfocusStory?: () => void;
@@ -72,7 +73,7 @@ export const StoryCard = ({
   isObserver,
   onEditStory,
   onRefreshStory,
-  onPublishToJira,
+  onPublishStoryPoints,
   onDeleteStory,
   onFocusStory,
   onUnfocusStory,
@@ -216,9 +217,9 @@ export const StoryCard = ({
                   Reveal ({voteCount}/{totalUsers})
                 </button>
               )}
-              {story.revealed && story.url && onPublishToJira && (
-                <button onClick={onPublishToJira} style={styles.successButton}>
-                  📤 Publish to JIRA
+              {story.revealed && story.url && onPublishStoryPoints && (
+                <button onClick={onPublishStoryPoints} style={styles.successButton}>
+                  📤 Publish to {detectProviderName(story.url)}
                 </button>
               )}
               {story.revealed && (

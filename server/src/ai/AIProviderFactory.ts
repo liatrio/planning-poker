@@ -1,7 +1,7 @@
 import { AIProvider } from './AIProvider';
 import { NoOpProvider } from './NoOpProvider';
 
-export type AIProviderType = 'anthropic' | 'openai' | 'bedrock' | 'none';
+export type AIProviderType = 'anthropic' | 'openai' | 'bedrock' | 'kiro' | 'none';
 
 export class AIProviderFactory {
   static createProvider(): AIProvider {
@@ -55,6 +55,18 @@ export class AIProviderFactory {
           return new BedrockProvider(region, modelId);
         } catch (error) {
           console.error('Failed to load BedrockProvider. Make sure @aws-sdk/client-bedrock-runtime is installed:', error);
+          return new NoOpProvider();
+        }
+      }
+
+      case 'kiro': {
+        try {
+          const { KiroProvider } = require('./KiroProvider');
+          const cliPath = process.env.KIRO_CLI_PATH || 'kiro-cli';
+          const timeoutMs = parseInt(process.env.KIRO_TIMEOUT_MS || '60000', 10);
+          return new KiroProvider(cliPath, timeoutMs);
+        } catch (error) {
+          console.error('Failed to load KiroProvider:', error);
           return new NoOpProvider();
         }
       }

@@ -7,6 +7,7 @@ This application supports AI-powered story analysis that can recommend breaking 
 - **Anthropic** (Claude via direct API)
 - **OpenAI** (GPT-4)
 - **AWS Bedrock** (Claude and other models via AWS)
+- **Kiro** (local `kiro-cli` binary)
 - **None** (Disabled)
 
 ## Configuration
@@ -44,7 +45,26 @@ BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0  # Optional
 
 Make sure your AWS credentials have permission to invoke Bedrock models.
 
-### Option 4: Disabled (Default)
+### Option 4: Kiro (local CLI)
+
+```bash
+AI_PROVIDER=kiro
+KIRO_CLI_PATH=kiro-cli    # Optional, defaults to `kiro-cli` on PATH
+KIRO_TIMEOUT_MS=60000     # Optional, per-call timeout in ms
+```
+
+The server shells out to the `kiro-cli` binary using:
+
+```bash
+kiro-cli chat --no-interactive --trust-all-tools "<prompt>"
+```
+
+Requirements:
+- `kiro-cli` must be installed on the host running the server and available on `PATH` (or set `KIRO_CLI_PATH` to an absolute path).
+- The user the server runs as must already be authenticated to Kiro (whatever login/config Kiro requires).
+- No API key is read from the environment — auth is delegated to the CLI.
+
+### Option 5: Disabled (Default)
 
 ```bash
 AI_PROVIDER=none
@@ -73,6 +93,10 @@ npm install @aws-sdk/client-bedrock-runtime
 ```
 
 **Note**: You'll also need to configure AWS credentials (see Option 3 above).
+
+### For Kiro
+
+No npm package is required — the provider shells out to the locally installed `kiro-cli` binary.
 
 ## How It Works
 

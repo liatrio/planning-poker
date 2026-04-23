@@ -1,10 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-
-interface JiraConfig {
-  email: string;
-  apiToken: string;
-  company: string;
-}
+import { StoryData, StoryProvider } from '../story/StoryProvider';
 
 interface JiraAttachment {
   id: string;
@@ -22,16 +17,14 @@ interface JiraIssue {
   };
 }
 
-export interface JiraStoryData {
-  name: string;
-  description: string;
-}
+export type JiraStoryData = StoryData;
 
 interface MediaIdMap {
   [mediaId: string]: string; // mediaId -> base64 data URL
 }
 
-export class JiraClient {
+export class JiraClient implements StoryProvider {
+  readonly name = 'Jira';
   private client: AxiosInstance | null = null;
   private company: string | null = null;
 
@@ -60,7 +53,7 @@ export class JiraClient {
     return this.client !== null;
   }
 
-  isJiraUrl(url: string): boolean {
+  matchesUrl(url: string): boolean {
     if (!this.company) return false;
     const jiraPattern = new RegExp(`https://${this.company}\\.atlassian\\.net/browse/([A-Z]+-\\d+)`);
     return jiraPattern.test(url);
@@ -254,8 +247,8 @@ export class JiraClient {
     }
   }
 
-  async enrichStoryFromJiraUrl(url: string): Promise<JiraStoryData | null> {
-    if (!this.isJiraUrl(url)) {
+  async enrichStoryFromUrl(url: string): Promise<StoryData | null> {
+    if (!this.matchesUrl(url)) {
       return null;
     }
 
@@ -295,7 +288,7 @@ export class JiraClient {
       return false;
     }
 
-    if (!this.isJiraUrl(url)) {
+    if (!this.matchesUrl(url)) {
       console.warn('Invalid JIRA URL');
       return false;
     }

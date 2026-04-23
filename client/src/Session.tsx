@@ -8,7 +8,8 @@ import { NamePromptModal } from './components/NamePromptModal';
 import { ParticipantsPanel } from './components/ParticipantsPanel';
 import { PastStories } from './components/PastStories';
 import { StoryCard } from './components/StoryCard';
-import { PublishToJiraModal } from './components/PublishToJiraModal';
+import { PublishStoryPointsModal } from './components/PublishStoryPointsModal';
+import { detectProviderName } from './providers';
 import { ConfirmModal } from './components/ConfirmModal';
 import { addToSessionHistory } from './utils/sessionHistory';
 
@@ -355,31 +356,32 @@ export const Session = () => {
       type: MessageType.REFRESH_STORY,
       storyId,
     });
-    setNotification('Refreshing story from Jira...');
+    setNotification(`Refreshing story from ${detectProviderName(story.url)}...`);
   };
 
   const openPublishModal = (storyId: string) => {
     const story = stories.find(s => s.id === storyId);
     if (!story?.url) {
-      setNotification('Story must have a URL to publish to JIRA');
+      setNotification('Story must have a URL to publish story points');
       return;
     }
     if (!story.revealed) {
-      setNotification('Story must be revealed before publishing to JIRA');
+      setNotification('Story must be revealed before publishing story points');
       return;
     }
     setPublishingStoryId(storyId);
   };
 
-  const publishToJira = (storyPoints: string) => {
+  const publishStoryPoints = (storyPoints: string) => {
     if (!publishingStoryId) return;
 
+    const story = stories.find(s => s.id === publishingStoryId);
     sendMessage({
-      type: MessageType.PUBLISH_TO_JIRA,
+      type: MessageType.PUBLISH_STORY_POINTS,
       storyId: publishingStoryId,
       storyPoints,
     });
-    setNotification('Publishing to JIRA...');
+    setNotification(`Publishing to ${detectProviderName(story?.url)}...`);
   };
 
   const copySessionLink = () => {
@@ -596,7 +598,7 @@ export const Session = () => {
                   isObserver={users.find(u => u.id === currentUserId)?.role === 'observer'}
                   onEditStory={() => setEditingStoryId(story.id)}
                   onRefreshStory={() => refreshStory(story.id)}
-                  onPublishToJira={() => openPublishModal(story.id)}
+                  onPublishStoryPoints={() => openPublishModal(story.id)}
                   onDeleteStory={() => deleteStory(story.id)}
                   onFocusStory={() => setFocusedStory(story.id)}
                   onUnfocusStory={unfocusStory}
@@ -676,12 +678,13 @@ export const Session = () => {
         const average = calculateAverage(publishingStoryId);
         const suggestedValue = average || '?';
         return (
-          <PublishToJiraModal
+          <PublishStoryPointsModal
             isOpen={true}
             storyName={publishingStory?.name || ''}
             suggestedValue={suggestedValue}
+            providerName={detectProviderName(publishingStory?.url)}
             darkMode={darkMode}
-            onPublish={publishToJira}
+            onPublish={publishStoryPoints}
             onClose={() => setPublishingStoryId(null)}
           />
         );
